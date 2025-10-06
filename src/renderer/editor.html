@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Videodrome - Editor</title>
+    <link rel="stylesheet" href="./components/content-explorer.css" />
+    <link rel="stylesheet" href="./components/parameter-control.css" />
+    <link rel="stylesheet" href="./monaco-setup.css" />
+    <link rel="stylesheet" href="./components/tooltip.css" />
+    <link rel="stylesheet" href="./components/modal.css" />
+    <style>
+      :root {
+        /* Spacing system */
+        --gap-tight: 2px;
+        --gap-small: 4px;
+        --gap-medium: 8px;
+        --gap-large: 16px;
+
+        /* Colors */
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #252526;
+        --bg-input: #3c3c3c;
+        --border-color: #3e3e42;
+        --hover-bg: #2a2d2e;
+        --hover-border: #4e4e52;
+        --text-primary: #d4d4d4;
+        --text-secondary: #cccccc;
+        --text-muted: #858585;
+        --text-placeholder: #6a6a6a;
+        --primary-blue: #0e639c;
+        --primary-blue-hover: #1177bb;
+        --primary-blue-active: #0d5a8f;
+        --error-bg: rgba(90, 29, 29, 0.95);
+        --error-text: #f48771;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        overflow: hidden;
+      }
+
+      #container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      button {
+        background: var(--primary-blue);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 2px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      button:hover {
+        background: var(--primary-blue-hover);
+      }
+
+      button:active {
+        background: var(--primary-blue-active);
+      }
+
+      button.secondary {
+        background: var(--border-color);
+      }
+
+      button.secondary:hover {
+        background: var(--hover-border);
+      }
+
+      button.icon-btn {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+
+      button.icon-btn:hover {
+        background: var(--hover-border);
+      }
+
+      button.icon-btn:active {
+        background: var(--primary-blue);
+      }
+
+      #content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        overflow: visible;
+        max-height: 100%;
+      }
+
+      /* Tab row */
+      #tab-row {
+        display: flex;
+        background: var(--bg-secondary);
+        align-items: center;
+      }
+
+      #explorer-tabs {
+        display: flex;
+        gap: var(--gap-tight);
+        padding: var(--gap-small) var(--gap-medium);
+        width: 250px;
+        min-width: 150px;
+        max-width: 600px;
+        flex-shrink: 0;
+      }
+
+      #toolbar-icons {
+        display: flex;
+        gap: var(--gap-tight);
+        padding: var(--gap-small) var(--gap-medium);
+        align-items: center;
+      }
+
+      /* Content panels */
+      #content-panels {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+        max-height: 100%;
+      }
+
+      /* Main editor area */
+      #main-area {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Main tabs */
+      #main-tabs {
+        display: flex;
+        gap: var(--gap-tight);
+        background: var(--bg-secondary);
+        padding: var(--gap-small) var(--gap-medium);
+        flex: 1;
+      }
+
+      .main-tab {
+        padding: 6px var(--gap-large);
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 2px 2px 0 0;
+      }
+
+      .main-tab:hover {
+        color: var(--text-primary);
+        background: var(--hover-bg);
+      }
+
+      .main-tab.active {
+        color: var(--text-primary);
+        background: var(--primary-blue);
+      }
+
+      .main-view {
+        flex: 1;
+        display: none;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .main-view.active {
+        display: flex;
+      }
+
+      /* Shared editor components (used across composer, performer, sources) */
+      .editor-header {
+        padding: var(--gap-medium) 12px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 40px;
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .editor-title {
+        display: flex;
+        align-items: center;
+        gap: var(--gap-medium);
+        min-width: 0;
+        flex-shrink: 1;
+      }
+
+      .editor-status {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        cursor: default;
+      }
+
+      .editor-file-name {
+        font-size: 12px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 2px;
+        transition: background 0.1s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .editor-file-name:hover {
+        background: var(--hover-bg);
+      }
+
+      .editor-file-name.is-new-patch {
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      .editor-actions {
+        display: flex;
+        gap: var(--gap-small);
+        flex-shrink: 0;
+        overflow: hidden;
+      }
+
+      .editor-btn {
+        background: var(--border-color);
+        color: var(--text-secondary);
+        border: none;
+        padding: 6px 12px;
+        border-radius: 2px;
+        cursor: pointer;
+        font-size: 11px;
+      }
+
+      .editor-btn:hover {
+        background: var(--hover-border);
+      }
+
+      .editor-btn:active {
+        background: var(--primary-blue);
+      }
+
+      /* Composer tab */
+      #editor-composer-content {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+
+      #editor-composer-editor-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border-right: 1px solid var(--border-color);
+      }
+
+      #editor-composer-preview-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: #000000;
+      }
+
+      #editor-composer-monaco {
+        flex: 1;
+        min-height: 0;
+        overflow: visible;
+        max-height: 100%;
+      }
+
+      #editor-composer-preview-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        position: relative;
+      }
+
+      #editor-composer-preview-canvas {
+        max-width: 100%;
+        max-height: 100%;
+        background: black;
+      }
+
+      /* Performer tab */
+      #editor-performer-slots-container {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        overflow: visible;
+        max-height: 100%;
+      }
+
+      .editor-performer-slot {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .editor-performer-slot:first-child {
+        border-right: 1px solid var(--border-color);
+      }
+
+      .editor-performer-slot-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+        min-height: 0;
+        max-height: 100%;
+      }
+
+      .editor-monaco-container {
+        flex: 1;
+        min-height: 0;
+        overflow: visible;
+        max-height: 100%;
+      }
+
+      .editor-performer-preview-container {
+        height: 200px;
+        flex-shrink: 0;
+        background: #000000;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+
+      .editor-performer-preview-canvas {
+        max-width: 100%;
+        max-height: 100%;
+        background: black;
+      }
+
+      /* Performer compositor/mixer controls */
+      #editor-performer-compositor-bar {
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        display: grid;
+        grid-template-columns: auto repeat(6, 1fr);
+        align-items: start;
+        justify-items: center;
+        gap: 16px;
+        padding: 12px 24px;
+        min-height: 70px;
+      }
+
+      .editor-performer-compositor-main-selector {
+        justify-self: start;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+      }
+
+      .editor-performer-compositor-group {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .editor-performer-compositor-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .editor-performer-compositor-main-selector .editor-performer-compositor-label,
+      .editor-performer-param-slot .editor-performer-compositor-label {
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .editor-performer-compositor-main-selector .editor-performer-compositor-label:hover,
+      .editor-performer-param-slot .editor-performer-compositor-label:hover {
+        color: var(--text-primary);
+      }
+
+      .editor-performer-param-slot {
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .editor-performer-param-slot.active {
+        display: flex;
+      }
+
+      .editor-performer-param-slider {
+        width: 100%;
+        max-width: 160px;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: var(--border-color);
+        border-radius: 2px;
+        outline: none;
+        margin-top: 8px;
+      }
+
+      .editor-performer-param-slider:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .editor-performer-param-value {
+        font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+        font-size: 11px;
+        color: var(--text-secondary);
+        min-width: 45px;
+        text-align: right;
+      }
+
+      .editor-performer-param-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        background: var(--primary-blue);
+        border-radius: 50%;
+        cursor: pointer;
+      }
+
+      .editor-performer-param-slider::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        background: var(--primary-blue);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+      }
+
+      .editor-performer-param-slider:disabled::-webkit-slider-thumb {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .editor-performer-param-slider:disabled::-moz-range-thumb {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      /* Focus styling for sliders */
+      .editor-performer-param-slider:focus {
+        outline: none;
+      }
+
+      .editor-performer-param-slider:focus::-webkit-slider-thumb {
+        background: var(--text-primary);
+      }
+
+      .editor-performer-param-slider:focus::-moz-range-thumb {
+        background: var(--text-primary);
+      }
+
+      /* Out-of-range slider styling */
+      .editor-performer-param-slider.out-of-range::-webkit-slider-thumb {
+        background: #d32f2f;
+      }
+
+      .editor-performer-param-slider.out-of-range::-moz-range-thumb {
+        background: #d32f2f;
+      }
+
+      #editor-performer-compositor-panel {
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: var(--gap-small) var(--gap-medium);
+        border-radius: 2px;
+        font-size: 12px;
+        font-family: inherit;
+      }
+
+      /* Sources tab */
+      #editor-sources-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        background: #000000;
+      }
+
+      #editor-sources-canvas {
+        max-width: 100%;
+        max-height: 100%;
+        background: black;
+      }
+
+      /* Settings tab */
+      #settings-tab {
+        flex-direction: column;
+      }
+
+      #settings-toolbar {
+        background: var(--bg-secondary);
+        padding: var(--gap-medium) 12px;
+        display: flex;
+        gap: var(--gap-medium);
+        border-bottom: 1px solid var(--border-color);
+        align-items: center;
+        height: 40px;
+      }
+
+      #settings-toolbar h1 {
+        font-size: 14px;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      #settings-content {
+        flex: 1;
+        overflow: auto;
+        padding: 24px;
+      }
+
+      .settings-section {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .settings-group {
+        margin-bottom: 32px;
+      }
+
+      .settings-group h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: var(--gap-large);
+        color: var(--text-secondary);
+      }
+
+      .setting-item {
+        margin-bottom: var(--gap-large);
+      }
+
+      .setting-item label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+      }
+
+      .setting-item .description {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: var(--gap-medium);
+      }
+
+      .input-group {
+        display: flex;
+        gap: var(--gap-medium);
+      }
+
+      input[type='text'],
+      input[type='number'],
+      select {
+        flex: 1;
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 6px var(--gap-medium);
+        border-radius: 2px;
+        font-size: 13px;
+        font-family: inherit;
+      }
+
+      input[type='text']:focus,
+      input[type='number']:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+      }
+
+      .browse-btn {
+        background: var(--border-color);
+        padding: 6px var(--gap-large);
+      }
+
+      .browse-btn:hover {
+        background: var(--hover-border);
+      }
+
+      .number-group {
+        display: flex;
+        gap: var(--gap-large);
+      }
+
+      .number-group .setting-item {
+        flex: 1;
+      }
+
+      .number-group input[type='number'] {
+        width: 100%;
+      }
+
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: var(--gap-medium);
+        margin-bottom: 12px;
+      }
+
+      input[type='checkbox'] {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .checkbox-item label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="content">
+        <!-- Tab row -->
+        <div id="tab-row">
+          <!-- Explorer tabs (left) -->
+          <div id="explorer-tabs">
+            <button class="explorer-tab active" id="patches-tab" title="Show patch explorer">
+              Patches
+            </button>
+            <button class="explorer-tab" id="media-tab" title="Show media explorer">Media</button>
+          </div>
+
+          <!-- Main tabs (middle) -->
+          <div id="main-tabs">
+            <button
+              class="main-tab active"
+              id="composer-tab-btn"
+              title="Switch to composer"
+              data-shortcut="Cmd+1"
+            >
+              Composer
+            </button>
+            <button
+              class="main-tab"
+              id="performer-tab-btn"
+              title="Switch to performer"
+              data-shortcut="Cmd+2"
+            >
+              Performer
+            </button>
+            <button
+              class="main-tab"
+              id="sources-tab-btn"
+              title="Switch to sources preview"
+              data-shortcut="Cmd+4"
+            >
+              Sources
+            </button>
+          </div>
+
+          <!-- Icon buttons (right) -->
+          <div id="toolbar-icons">
+            <button
+              id="toggle-output-btn"
+              class="icon-btn secondary"
+              title="Toggle output window visibility"
+            >
+              🖥️
+            </button>
+            <button id="settings-btn" class="icon-btn secondary" title="Open settings">⚙️</button>
+          </div>
+        </div>
+
+        <!-- Content panels -->
+        <div id="content-panels">
+          <!-- Sidebar for patch/media explorer -->
+          <div id="sidebar">
+            <div id="sidebar-resizer"></div>
+
+            <!-- Patches view -->
+            <div id="patches-view" class="explorer-view active">
+              <div id="patch-search">
+                <div class="search-input-container">
+                  <input
+                    type="text"
+                    id="patch-search-input"
+                    placeholder="Search patches..."
+                    autocomplete="off"
+                  />
+                  <button
+                    class="search-clear-btn"
+                    id="patch-search-clear"
+                    title="Clear search (ESC)"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              <div id="sidebar-content">
+                <ul id="patch-list">
+                  <li class="explorer-item">No patches found</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Media view -->
+            <div id="media-view" class="explorer-view">
+              <div id="media-search">
+                <div class="search-input-container">
+                  <input
+                    type="text"
+                    id="media-search-input"
+                    placeholder="Search media..."
+                    autocomplete="off"
+                  />
+                  <button
+                    class="search-clear-btn"
+                    id="media-search-clear"
+                    title="Clear search (ESC)"
+                  >
+                    ×
+                  </button>
+                </div>
+                <button id="regenerate-previews-btn" title="Regenerate all media previews">
+                  ↻
+                </button>
+              </div>
+              <div id="sidebar-content">
+                <ul id="media-list">
+                  <li class="explorer-item">No media files found</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main editor area -->
+          <div id="main-area">
+            <!-- Composer tab -->
+            <div id="composer-tab" class="main-view active">
+              <div id="editor-composer-content">
+                <!-- Editor section -->
+                <div id="editor-composer-editor-section">
+                  <div class="editor-header">
+                    <div class="editor-title">
+                      <span class="editor-file-name" id="composer-file-name">New Patch</span>
+                      <span class="editor-status" id="composer-status">Ready</span>
+                    </div>
+                    <div class="editor-actions">
+                      <button
+                        class="editor-btn"
+                        id="composer-run-btn"
+                        title="Run patch"
+                        data-shortcut="Cmd+Enter"
+                      >
+                        Run
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="composer-new-btn"
+                        title="New patch"
+                        data-shortcut="Cmd+N"
+                      >
+                        New
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="composer-save-btn"
+                        title="Save patch"
+                        data-shortcut="Cmd+S"
+                      >
+                        Save
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="composer-save-as-btn"
+                        title="Save patch as"
+                        data-shortcut="Shift+Cmd+S"
+                      >
+                        Save As...
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="composer-revert-btn"
+                        title="Revert patch"
+                        data-shortcut="Cmd+R"
+                      >
+                        Revert
+                      </button>
+                    </div>
+                  </div>
+                  <div id="editor-composer-monaco"></div>
+                </div>
+
+                <!-- Preview section -->
+                <div id="editor-composer-preview-section">
+                  <div id="editor-composer-preview-container">
+                    <canvas id="editor-composer-preview-canvas" width="640" height="480"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performer tab -->
+            <div id="performer-tab" class="main-view">
+              <div id="editor-performer-slots-container">
+                <!-- Slot A -->
+                <div class="editor-performer-slot" id="slot-a">
+                  <div class="editor-header">
+                    <div class="editor-title">
+                      <span class="editor-file-name" id="slot-a-file-name">A: New Patch</span>
+                      <span class="editor-status" id="slot-a-status">Ready</span>
+                    </div>
+                    <div class="editor-actions">
+                      <button
+                        class="editor-btn"
+                        id="run-a-btn"
+                        title="Run this slot"
+                        data-shortcut="Cmd+Enter"
+                      >
+                        Run
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="new-a-btn"
+                        title="New patch"
+                        data-shortcut="Cmd+N"
+                      >
+                        New
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="save-a-btn"
+                        title="Save patch"
+                        data-shortcut="Cmd+S"
+                      >
+                        Save
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="save-as-a-btn"
+                        title="Save as new patch"
+                        data-shortcut="Shift+Cmd+S"
+                      >
+                        Save As...
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="revert-a-btn"
+                        title="Revert patch"
+                        data-shortcut="Cmd+R"
+                      >
+                        Revert
+                      </button>
+                    </div>
+                  </div>
+                  <div class="editor-performer-slot-body">
+                    <div class="editor-monaco-container" id="editor-a"></div>
+                    <div class="editor-performer-preview-container">
+                      <canvas
+                        class="editor-performer-preview-canvas"
+                        id="preview-canvas-a"
+                        width="640"
+                        height="480"
+                      ></canvas>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slot B -->
+                <div class="editor-performer-slot" id="slot-b">
+                  <div class="editor-header">
+                    <div class="editor-title">
+                      <span class="editor-file-name" id="slot-b-file-name">B: New Patch</span>
+                      <span class="editor-status" id="slot-b-status">Ready</span>
+                    </div>
+                    <div class="editor-actions">
+                      <button
+                        class="editor-btn"
+                        id="run-b-btn"
+                        title="Run this slot"
+                        data-shortcut="Cmd+Enter"
+                      >
+                        Run
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="new-b-btn"
+                        title="New patch"
+                        data-shortcut="Cmd+N"
+                      >
+                        New
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="save-b-btn"
+                        title="Save patch"
+                        data-shortcut="Cmd+S"
+                      >
+                        Save
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="save-as-b-btn"
+                        title="Save patch as"
+                        data-shortcut="Shift+Cmd+S"
+                      >
+                        Save As...
+                      </button>
+                      <button
+                        class="editor-btn"
+                        id="revert-b-btn"
+                        title="Revert patch"
+                        data-shortcut="Cmd+R"
+                      >
+                        Revert
+                      </button>
+                    </div>
+                  </div>
+                  <div class="editor-performer-slot-body">
+                    <div class="editor-monaco-container" id="editor-b"></div>
+                    <div class="editor-performer-preview-container">
+                      <canvas
+                        class="editor-performer-preview-canvas"
+                        id="preview-canvas-b"
+                        width="640"
+                        height="480"
+                      ></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Compositor controls -->
+              <div id="editor-performer-compositor-bar">
+                <div
+                  class="editor-performer-compositor-group editor-performer-compositor-main-selector"
+                >
+                  <label class="editor-performer-compositor-label">Composite</label>
+                  <select id="editor-performer-compositor-panel">
+                    <!-- Will be populated dynamically from composite-functions.ts -->
+                  </select>
+                </div>
+                <div class="editor-performer-param-slot" id="param-slot-1">
+                  <label class="editor-performer-compositor-label" id="param-1-label"
+                    >Param 1</label
+                  >
+                  <input
+                    type="range"
+                    id="param-1-slider"
+                    class="editor-performer-param-slider"
+                    disabled
+                  />
+                </div>
+                <div class="editor-performer-param-slot" id="param-slot-2">
+                  <label class="editor-performer-compositor-label" id="param-2-label"
+                    >Param 2</label
+                  >
+                  <input
+                    type="range"
+                    id="param-2-slider"
+                    class="editor-performer-param-slider"
+                    disabled
+                  />
+                </div>
+                <div class="editor-performer-param-slot" id="param-slot-3">
+                  <label class="editor-performer-compositor-label" id="param-3-label"
+                    >Param 3</label
+                  >
+                  <input
+                    type="range"
+                    id="param-3-slider"
+                    class="editor-performer-param-slider"
+                    disabled
+                  />
+                </div>
+                <div class="editor-performer-param-slot" id="param-slot-4">
+                  <label class="editor-performer-compositor-label" id="param-4-label"
+                    >Param 4</label
+                  >
+                  <input
+                    type="range"
+                    id="param-4-slider"
+                    class="editor-performer-param-slider"
+                    disabled
+                  />
+                </div>
+                <div class="editor-performer-param-slot" id="param-slot-5">
+                  <label class="editor-performer-compositor-label" id="param-5-label"
+                    >Param 5</label
+                  >
+                  <input
+                    type="range"
+                    id="param-5-slider"
+                    class="editor-performer-param-slider"
+                    disabled
+                  />
+                </div>
+                <div class="editor-performer-param-slot" id="param-slot-6">
+                  <label class="editor-performer-compositor-label" id="param-6-label"
+                    >Param 6</label
+                  >
+                  <input
+                    type="range"
+                    id="param-6-slider"
+                    class="editor-performer-param-slider"
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Sources tab -->
+            <div id="sources-tab" class="main-view">
+              <div class="editor-header">
+                <div class="editor-title">
+                  <span>Sources</span>
+                </div>
+              </div>
+              <div id="editor-sources-container">
+                <canvas id="editor-sources-canvas" width="640" height="480"></canvas>
+              </div>
+            </div>
+
+            <!-- Settings tab -->
+            <div id="settings-tab" class="main-view">
+              <div id="settings-toolbar">
+                <h1>Settings</h1>
+                <button id="settings-restore-defaults-btn" class="secondary">
+                  Restore Defaults
+                </button>
+              </div>
+              <div id="settings-content">
+                <div class="settings-section">
+                  <div class="settings-group">
+                    <h2>Editor</h2>
+                    <div class="setting-item">
+                      <div class="checkbox-item">
+                        <input type="checkbox" id="settings-intellisense-enabled" checked />
+                        <label for="settings-intellisense-enabled">Enable Intellisense</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="settings-group">
+                    <h2>Parameter Control</h2>
+                    <div class="setting-item">
+                      <div class="checkbox-item">
+                        <input type="checkbox" id="settings-parameter-control-enabled" checked />
+                        <label for="settings-parameter-control-enabled"
+                          >Enable parameter control</label
+                        >
+                      </div>
+                    </div>
+                    <div class="checkbox-item">
+                      <input type="checkbox" id="settings-parameter-control-drag-lock" checked />
+                      <label for="settings-parameter-control-drag-lock"
+                        >Mouse drag lock (hides cursor during drag)</label
+                      >
+                    </div>
+                    <div class="setting-item">
+                      <label for="settings-parameter-control-sensitivity">Sensitivity</label>
+                      <div class="description">
+                        How fast numeric parameters change when dragging (lower = faster)
+                      </div>
+                      <input
+                        type="number"
+                        id="settings-parameter-control-sensitivity"
+                        min="1"
+                        max="100"
+                        step="1"
+                        value="10"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Audio device selection - commented out until Hydra supports deviceId
+                  <div class="settings-group">
+                    <h2>Audio</h2>
+                    <div class="setting-item">
+                      <label for="settings-audio-device">Audio Input Device</label>
+                      <div class="description">
+                        Audio device for reactive visuals
+                      </div>
+                      <select id="settings-audio-device">
+                        <option value="">Default audio input</option>
+                      </select>
+                    </div>
+                  </div>
+                  -->
+
+                  <div class="settings-group">
+                    <h2>Directories</h2>
+                    <div class="setting-item">
+                      <label for="settings-patch-directory">Patch Directory</label>
+                      <div class="description">
+                        Location where your Hydra patch files (.js) are stored
+                      </div>
+                      <div class="input-group">
+                        <input type="text" id="settings-patch-directory" readonly />
+                        <button class="browse-btn" id="settings-browse-patch-dir">Browse...</button>
+                      </div>
+                    </div>
+                    <div class="setting-item">
+                      <label for="settings-media-directory">Media Directory</label>
+                      <div class="description">
+                        Location where your video and media files are stored
+                      </div>
+                      <div class="input-group">
+                        <input type="text" id="settings-media-directory" readonly />
+                        <button class="browse-btn" id="settings-browse-media-dir">Browse...</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/editor.ts"></script>
+  </body>
+</html>
