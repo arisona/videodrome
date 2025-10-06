@@ -1,0 +1,92 @@
+{
+  "name": "videodrome",
+  "version": "2025.1.0-beta",
+  "description": "Standalone video synthesizer based on Hydra",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "npm run build && electron .",
+    "type-check": "npm run type-check:main && npm run type-check:renderer",
+    "type-check:main": "tsc -p tsconfig.main.json --noEmit",
+    "type-check:renderer": "tsc -p tsconfig.renderer.json --noEmit",
+    "type-check:watch": "concurrently \"tsc -p tsconfig.main.json --noEmit --watch\" \"tsc -p tsconfig.renderer.json --noEmit --watch\"",
+    "build": "npm run type-check && npm run build:main && npm run build:preload && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:preload": "esbuild src/main/preload.ts --bundle --platform=node --format=cjs --outfile=dist/main/preload.js --external:electron --packages=external",
+    "build:renderer": "vite build",
+    "watch": "concurrently \"tsc -p tsconfig.main.json -w\" \"vite build --watch\"",
+    "start": "electron .",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "check-format": "prettier --check ."
+  },
+  "keywords": [
+    "hydra",
+    "visuals",
+    "livecoding",
+    "cronenberg"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "@types/path-browserify": "^1.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "concurrently": "^9.2.1",
+    "electron": "^38.4.0",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.11",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  },
+  "dependencies": {
+    "hydra-synth": "^1.4.0",
+    "monaco-editor": "^0.54.0",
+    "path-browserify": "^1.0.1"
+  },
+  "build": {
+    "appId": "org.corebounce.videodrome",
+    "productName": "Videodrome",
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    }
+  }
+}

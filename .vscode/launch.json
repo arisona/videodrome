@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Videodrome (npm run dev)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "outputCapture": "std",
+      "env": {
+        "ELECTRON_ENABLE_LOGGING": "1"
+      },
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**"],
+      "preLaunchTask": "npm: build"
+    }
+  ]
+}

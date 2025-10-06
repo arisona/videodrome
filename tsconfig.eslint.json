@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/main/**/*",
+    "src/renderer/**/*",
+    "src/shared/**/*",
+    "src/types/**/*",
+    "*.cjs",
+    "*.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": true
+  }
+}
