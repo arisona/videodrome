@@ -78,7 +78,22 @@
           ]
         }
       ],
-      "icon": "build/icon.icns"
+      "icon": "build/icons/icon.icns"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "build/icons/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icons/icon.png",
+      "category": "Graphics"
     },
     "files": [
       "dist/**/*",
