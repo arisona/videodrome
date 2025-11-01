@@ -24,6 +24,7 @@ import {
   registerHydraCompletionProvider,
   registerHydraSignatureHelpProvider,
   registerHydraHoverProvider,
+  registerHydraDetailedDocsCommand,
 } from './hydra/hydra-intellisense';
 import {
   configureMonacoEnvironment,
@@ -65,6 +66,7 @@ defineVideodromeTheme();
 registerHydraCompletionProvider();
 registerHydraSignatureHelpProvider();
 registerHydraHoverProvider();
+registerHydraDetailedDocsCommand();
 
 // Current main tab
 type MainTab = 'compose' | 'perform' | 'sources' | 'settings';

@@ -4,6 +4,7 @@ import * as monaco from 'monaco-editor';
 
 import { detectNumberAtPosition } from '../components/monaco-parameter-control';
 import { getSettings } from '../settings-service';
+import { convertMarkdownToHtml } from '../utils/markdown';
 
 import { HYDRA_API, HYDRA_GLOBAL_DOCS } from './hydra-api';
 
@@ -201,25 +202,22 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
       // Check if word matches a Hydra function
       const func = HYDRA_API.find((f) => f.name === word.word);
       if (func) {
-        const params = (func.params ?? [])
+        // Build simplified parameter signature
+        const paramSignature = (func.params ?? [])
           .map((p) => {
             const defaultStr = p.default ? ` = ${p.default}` : '';
-            return `  ${p.name}: ${p.type}${defaultStr} - ${p.description}`;
+            return `${p.name}: ${p.type}${defaultStr}`;
           })
-          .join('\n');
+          .join(', ');
 
-        let markdown = `**${func.name}** - ${func.description}\n\n`;
+        // Simplified hover: just description and signature
+        let markdown = `**${func.name}**(${paramSignature}) → ${func.type}\n\n`;
+        markdown += `${func.description}\n\n`;
 
-        if ((func.params ?? []).length > 0) {
-          markdown += '**Parameters:**\n```\n' + params + '\n```\n\n';
-        }
-
-        markdown += `**Returns:** ${func.type}\n\n`;
-
-        if (func.examples && func.examples.length > 0) {
-          markdown += '**Examples:**\n```javascript\n';
-          markdown += func.examples.join('\n');
-          markdown += '\n```';
+        // Add "Show more" link if there's detailed documentation or examples
+        if (func.doc || func.examples) {
+          const args = encodeURIComponent(JSON.stringify({ name: func.name, type: 'function' }));
+          markdown += `<a href="command:hydra.showDetailedDocs?${args}" style="text-decoration: none; color: var(--vscode-textLink-foreground);" onmouseenter="this.removeAttribute('title')" title="">More...</a>`;
         }
 
         return {
@@ -227,6 +225,8 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
             {
               value: markdown,
               isTrusted: true,
+              supportThemeIcons: true,
+              supportHtml: true,
             },
           ],
           range: new monaco.Range(
@@ -241,11 +241,23 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
       // Check if word matches a global
       const globalDoc = HYDRA_GLOBAL_DOCS.find((g) => g.name === word.word);
       if (globalDoc) {
+        // Simplified hover: just description
+        let markdown = `**${globalDoc.name}** (${globalDoc.type})\n\n`;
+        markdown += `${globalDoc.description}\n\n`;
+
+        // Add "Show more" link if there's detailed documentation
+        if (globalDoc.doc || globalDoc.examples) {
+          const args = encodeURIComponent(JSON.stringify({ name: globalDoc.name, type: 'global' }));
+          markdown += `<a href="command:hydra.showDetailedDocs?${args}" style="text-decoration: none; color: var(--vscode-textLink-foreground);" onmouseenter="this.removeAttribute('title')" title="">More...</a>`;
+        }
+
         return {
           contents: [
             {
-              value: globalDoc.doc ?? globalDoc.description,
+              value: markdown,
               isTrusted: true,
+              supportThemeIcons: true,
+              supportHtml: true,
             },
           ],
           range: new monaco.Range(
@@ -260,6 +272,121 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
       return null;
     },
   });
+}
+
+/**
+ * Register command to show detailed Hydra documentation
+ */
+export function registerHydraDetailedDocsCommand(): void {
+  const commandId = 'hydra.showDetailedDocs';
+
+  // Register a global command that can be invoked from markdown links
+  monaco.editor.registerCommand(
+    commandId,
+    (_accessor, args: { name: string; type: 'function' | 'global' }) => {
+      if (!args.name) {
+        return;
+      }
+
+      let markdown = '';
+
+      if (args.type === 'function') {
+        const func = HYDRA_API.find((f) => f.name === args.name);
+        if (!func) {
+          return;
+        }
+
+        // Build full documentation
+        const paramSignature = (func.params ?? [])
+          .map((p) => {
+            const defaultStr = p.default ? ` = ${p.default}` : '';
+            return `${p.name}: ${p.type}${defaultStr}`;
+          })
+          .join(', ');
+
+        markdown += `# ${func.name}(${paramSignature}) → ${func.type}\n${func.description}\n`;
+
+        if (func.doc) {
+          markdown += `## Details\n${func.doc}\n`;
+        }
+
+        if ((func.params ?? []).length > 0) {
+          markdown += `## Parameters\n`;
+          for (const param of func.params ?? []) {
+            const defaultStr = param.default ? ` = ${param.default}` : '';
+            markdown += `- **${param.name}** (${param.type}${defaultStr}): ${param.description}\n`;
+          }
+        }
+
+        if (func.examples && func.examples.length > 0) {
+          markdown += `## Examples\n<examples>${func.examples.join('<examplesep>')}</examples>`;
+        }
+      } else {
+        const globalDoc = HYDRA_GLOBAL_DOCS.find((g) => g.name === args.name);
+        if (!globalDoc) {
+          return;
+        }
+
+        markdown += `# ${globalDoc.name} (${globalDoc.type})\n${globalDoc.description}\n`;
+
+        if (globalDoc.doc) {
+          markdown += `## Details\n${globalDoc.doc}\n`;
+        }
+
+        if (globalDoc.properties && globalDoc.properties.length > 0) {
+          markdown += `## Properties\n`;
+          for (const prop of globalDoc.properties) {
+            markdown += `- **${prop.name}** (${prop.type}): ${prop.description}\n`;
+          }
+        }
+
+        if (globalDoc.examples && globalDoc.examples.length > 0) {
+          markdown += `## Examples\n<examples>${globalDoc.examples.join('<examplesep>')}</examples>`;
+        }
+      }
+
+      // Show in a modal
+      showDetailedDocsModal(markdown, args.name);
+    },
+  );
+}
+
+/**
+ * Display detailed documentation in a modal
+ */
+function showDetailedDocsModal(markdown: string, _title: string): void {
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  // Create modal content
+  const modal = document.createElement('div');
+  modal.className = 'modal-content';
+
+  // Create close button
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'modal-close-btn';
+  closeBtn.textContent = '×';
+  closeBtn.onclick = () => {
+    overlay.remove();
+  };
+
+  // Convert markdown to HTML and set content
+  modal.innerHTML = convertMarkdownToHtml(markdown);
+  modal.appendChild(closeBtn);
+
+  // Add modal to overlay
+  overlay.appendChild(modal);
+
+  // Close on overlay click
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  };
+
+  // Add to page
+  document.body.appendChild(overlay);
 }
 
 /**
