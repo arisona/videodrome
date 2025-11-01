@@ -85,7 +85,7 @@ export function registerHydraCompletionProvider(): monaco.IDisposable {
         }
 
         // Build parameter signature string
-        const params = func.params
+        const params = (func.params ?? [])
           .map((p) => {
             if (p.default) {
               return `${p.name}: ${p.type} = ${p.default}`;
@@ -95,15 +95,15 @@ export function registerHydraCompletionProvider(): monaco.IDisposable {
           .join(', ');
 
         // Build insertText with parameter placeholders
-        const placeholders = func.params
+        const placeholders = (func.params ?? [])
           // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
           .map((p, index) => `\${${index + 1}:${p.default ?? p.name}}`)
           .join(', ');
 
         let documentation = func.description;
-        if (func.params.length > 0) {
+        if ((func.params ?? []).length > 0) {
           documentation += '\n\nParameters:\n';
-          for (const param of func.params) {
+          for (const param of func.params ?? []) {
             documentation += `- ${param.name} (${param.type}): ${param.description}`;
             if (param.default) {
               documentation += ` [default: ${param.default}]`;
@@ -127,7 +127,7 @@ export function registerHydraCompletionProvider(): monaco.IDisposable {
             value: documentation,
             isTrusted: true,
           },
-          detail: `${func.name}(${params})${func.returns ? ` → ${func.returns}` : ''}`,
+          detail: `${func.name}(${params}) → ${func.type}`,
           range: range,
         });
       }
@@ -135,12 +135,18 @@ export function registerHydraCompletionProvider(): monaco.IDisposable {
       // Add global objects (s0, s1, o0, etc.) only if not in method chain
       if (!isMethodChain) {
         for (const global of HYDRA_GLOBAL_DOCS) {
+          // Map kind to Monaco CompletionItemKind
+          const kind =
+            global.kind === 'constant'
+              ? monaco.languages.CompletionItemKind.Constant
+              : monaco.languages.CompletionItemKind.Variable;
+
           suggestions.push({
             label: global.name,
-            kind: monaco.languages.CompletionItemKind[global.kind],
+            kind: kind,
             insertText: global.name,
             documentation: {
-              value: global.shortDoc,
+              value: global.description,
               isTrusted: true,
             },
             range: range,
@@ -195,7 +201,7 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
       // Check if word matches a Hydra function
       const func = HYDRA_API.find((f) => f.name === word.word);
       if (func) {
-        const params = func.params
+        const params = (func.params ?? [])
           .map((p) => {
             const defaultStr = p.default ? ` = ${p.default}` : '';
             return `  ${p.name}: ${p.type}${defaultStr} - ${p.description}`;
@@ -204,13 +210,11 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
 
         let markdown = `**${func.name}** - ${func.description}\n\n`;
 
-        if (func.params.length > 0) {
+        if ((func.params ?? []).length > 0) {
           markdown += '**Parameters:**\n```\n' + params + '\n```\n\n';
         }
 
-        if (func.returns) {
-          markdown += `**Returns:** ${func.returns}\n\n`;
-        }
+        markdown += `**Returns:** ${func.type}\n\n`;
 
         if (func.examples && func.examples.length > 0) {
           markdown += '**Examples:**\n```javascript\n';
@@ -240,7 +244,7 @@ export function registerHydraHoverProvider(): monaco.IDisposable {
         return {
           contents: [
             {
-              value: globalDoc.detailedDoc,
+              value: globalDoc.doc ?? globalDoc.description,
               isTrusted: true,
             },
           ],
@@ -297,7 +301,7 @@ export function registerHydraSignatureHelpProvider(): monaco.IDisposable {
       const paramsText = textBeforeCursor.substring(textBeforeCursor.lastIndexOf('(') + 1);
       const activeParameter = (paramsText.match(/,/g) ?? []).length;
 
-      const parameters = func.params.map((p) => {
+      const parameters = (func.params ?? []).map((p) => {
         const defaultStr = p.default ? ` = ${p.default}` : '';
         return {
           label: `${p.name}: ${p.type}${defaultStr}`,
@@ -312,7 +316,7 @@ export function registerHydraSignatureHelpProvider(): monaco.IDisposable {
         value: {
           signatures: [
             {
-              label: `${func.name}(${func.params.map((p) => `${p.name}: ${p.type}`).join(', ')})`,
+              label: `${func.name}(${(func.params ?? []).map((p) => `${p.name}: ${p.type}`).join(', ')})`,
               documentation: {
                 value: func.description,
                 isTrusted: true,
