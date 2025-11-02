@@ -90,12 +90,14 @@ export class StandaloneParameterControl {
   // Auto-hide timer and mouse tracking
   private hidingTimer: ReturnType<typeof setTimeout> | null = null;
   private isMouseOver = false; // Track if mouse is currently over the widget
+  private hasMouseMovedSinceShown = false; // Track if mouse has moved since widget was shown
 
   // Store event handlers so we can remove them
   private handleKeyDown!: (e: KeyboardEvent) => void;
   private handleClickOutside!: (e: MouseEvent) => void;
   private handlePointerLockChange!: () => void;
   private handlePointerLockError!: () => void;
+  private handleFirstMouseMove!: (e: MouseEvent) => void;
 
   constructor(initialValue: number, config: Partial<StandaloneParameterControlConfig> = {}) {
     // Update current settings from the settings service
@@ -207,6 +209,10 @@ export class StandaloneParameterControl {
    * Check if the widget has been attached to the DOM and start auto-hide timer if needed
    * This is called from the constructor to handle cases where the widget appears
    * but the mouse never enters it (e.g., Monaco content widgets and standalone widgets)
+   *
+   * Note: We don't start the auto-hide timer immediately. Instead, we wait for the mouse
+   * to move first. This prevents the widget from auto-hiding while the user is just
+   * looking at it with a stationary cursor.
    */
   private startInitialAutoHideCheck(): void {
     const checkIfAttached = () => {
@@ -216,10 +222,19 @@ export class StandaloneParameterControl {
       if (this.domNode.isConnected) {
         // Wait a bit for mouseenter event to fire if the mouse is over the widget
         setTimeout(() => {
-          // If mouse is not over the widget and we're not in an interactive state, start hiding timer
-          if (!this.isMouseOver && !this.isDragging && !this.isInInputMode) {
-            this.startHidingTimer();
-          }
+          // Set up a one-time mouse move handler to detect when the user moves the mouse
+          this.handleFirstMouseMove = () => {
+            this.hasMouseMovedSinceShown = true;
+            // Remove this one-time handler
+            document.removeEventListener('mousemove', this.handleFirstMouseMove);
+
+            // If mouse is not over the widget and we're not in an interactive state, start hiding timer
+            if (!this.isMouseOver && !this.isDragging && !this.isInInputMode) {
+              this.startHidingTimer();
+            }
+          };
+
+          document.addEventListener('mousemove', this.handleFirstMouseMove);
         }, 100);
       } else {
         // Not attached yet, check again soon
@@ -447,6 +462,7 @@ export class StandaloneParameterControl {
       document.removeEventListener('keydown', this.handleKeyDown, true);
       document.removeEventListener('wheel', handleWheel);
       document.removeEventListener('click', this.handleClickOutside, true);
+      document.removeEventListener('mousemove', this.handleFirstMouseMove);
     };
 
     this.handlePointerLockChange = () => {
@@ -799,6 +815,7 @@ export class StandaloneParameterControl {
     document.removeEventListener('click', this.handleClickOutside, true);
     document.removeEventListener('pointerlockchange', this.handlePointerLockChange, false);
     document.removeEventListener('pointerlockerror', this.handlePointerLockError, false);
+    document.removeEventListener('mousemove', this.handleFirstMouseMove);
 
     if (document.pointerLockElement === this.domNode) {
       document.exitPointerLock();
