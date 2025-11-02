@@ -326,24 +326,24 @@ solid(0, 0, 0)
   // Register context menu actions
   registerContextMenuActions(editor, [
     {
-      id: 'composer-send-to-performer-a',
-      label: 'Send to Performer Slot A',
+      id: 'composer-open-in-performer-a',
+      label: 'Open in Performer Slot A',
       run: () => {
         const content = composerState?.editor.getValue() ?? '';
         window.dispatchEvent(
-          new CustomEvent('composer-send-to-performer', {
+          new CustomEvent('composer-open-in-performer', {
             detail: { content, target: 'A' },
           }),
         );
       },
     },
     {
-      id: 'composer-send-to-performer-b',
-      label: 'Send to Performer Slot B',
+      id: 'composer-open-in-performer-b',
+      label: 'Open in Performer Slot B',
       run: () => {
         const content = composerState?.editor.getValue() ?? '';
         window.dispatchEvent(
-          new CustomEvent('composer-send-to-performer', {
+          new CustomEvent('composer-open-in-performer', {
             detail: { content, target: 'B' },
           }),
         );

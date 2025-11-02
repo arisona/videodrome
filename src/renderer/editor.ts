@@ -313,7 +313,7 @@ window.addEventListener('patch-explorer-new-patch', () => {
 });
 
 // Handle composer context menu - send content to performer
-window.addEventListener('composer-send-to-performer', ((event: CustomEvent) => {
+window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
   const { content, target } = event.detail as {
     content: string;
     target: 'A' | 'B';
@@ -335,7 +335,7 @@ window.addEventListener('composer-send-to-performer', ((event: CustomEvent) => {
 }) as EventListener);
 
 // Handle performer context menu - send content to composer
-window.addEventListener('performer-send-to-composer', ((event: CustomEvent) => {
+window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
   const { content } = event.detail as {
     content: string;
     source: 'A' | 'B';

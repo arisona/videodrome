@@ -621,12 +621,12 @@ export function initPerformer() {
   // Register context menu actions for slot A
   registerContextMenuActions(editorA, [
     {
-      id: 'performer-send-to-composer-a',
-      label: 'Send to Composer',
+      id: 'performer-open-in-composer-a',
+      label: 'Open in Composer',
       run: () => {
         const content = performerState.slotA?.editor.getValue() ?? '';
         window.dispatchEvent(
-          new CustomEvent('performer-send-to-composer', {
+          new CustomEvent('performer-open-in-composer', {
             detail: { content, source: 'A' },
           }),
         );
@@ -644,12 +644,12 @@ export function initPerformer() {
   // Register context menu actions for slot B
   registerContextMenuActions(editorB, [
     {
-      id: 'performer-send-to-composer-b',
-      label: 'Send to Composer',
+      id: 'performer-open-in-composer-b',
+      label: 'Open in Composer',
       run: () => {
         const content = performerState.slotB?.editor.getValue() ?? '';
         window.dispatchEvent(
-          new CustomEvent('performer-send-to-composer', {
+          new CustomEvent('performer-open-in-composer', {
             detail: { content, source: 'B' },
           }),
         );
