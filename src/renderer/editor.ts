@@ -105,7 +105,7 @@ function updateOutputWindowButton(isOpen: boolean) {
   const button = document.getElementById('toggle-output-btn');
   if (button) {
     const tooltipText = isOpen
-      ? 'Close output window'
+      ? 'Hide output window'
       : 'Show output window (Alt+click for fullscreen)';
     button.setAttribute('data-tooltip', tooltipText);
   }

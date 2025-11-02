@@ -130,9 +130,7 @@ function createEditorWindowAndShow() {
   editorWindow.on('closed', () => {
     editorWindow = null;
     // Close output window when editor closes
-    if (outputWindow) {
-      outputWindow.hide();
-    }
+    outputWindow?.hide();
   });
 }
 
@@ -163,26 +161,20 @@ function createOutputWindowAndKeepHidden() {
     }
     event.preventDefault();
     outputWindow?.hide();
-    if (editorWindow) {
-      editorWindow.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
-    }
+    editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
   });
 
   outputWindow.on('closed', () => {
     outputWindow = null;
-    if (previewChannel) {
-      previewChannel.port1.close();
-      previewChannel.port2.close();
-      previewChannel = null;
-    }
+    previewChannel?.port1.close();
+    previewChannel?.port2.close();
+    previewChannel = null;
   });
 
   // When output window finishes loading, notify editor to sync code
   outputWindow.webContents.on('did-finish-load', () => {
-    if (editorWindow) {
-      editorWindow.webContents.send(IPC_CHANNELS.OUTPUT_READY);
-      editorWindow.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
-    }
+    editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_READY);
+    editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
     setupPreviewChannel();
   });
 }
@@ -192,10 +184,8 @@ function setupPreviewChannel() {
     return;
   }
 
-  if (previewChannel) {
-    previewChannel.port1.close();
-    previewChannel.port2.close();
-  }
+  previewChannel?.port1.close();
+  previewChannel?.port2.close();
 
   previewChannel = new MessageChannelMain();
   outputWindow.webContents.postMessage(IPC_CHANNELS.EDITOR_PREVIEW_CHANNEL, null, [
@@ -318,23 +308,18 @@ app.on('window-all-closed', () => {
 // IPC handlers
 ipcMain.on(IPC_CHANNELS.EDITOR_CODE_RUN, (_event, code: string) => {
   // Forward code to output window
-  if (outputWindow) {
-    outputWindow.webContents.send(IPC_CHANNELS.OUTPUT_CODE_RUN, code);
-  }
+  outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_CODE_RUN, code);
 });
 
 ipcMain.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results: ExecutionResultsPayload) => {
-  if (editorWindow) {
-    editorWindow.webContents.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
-  }
+  editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
+  editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
 });
 
 ipcMain.on(
   IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE,
   (_event, data: { sourceSlot: string; mediaUrl: string; mediaType: string }) => {
-    if (outputWindow) {
-      outputWindow.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, data);
-    }
+    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, data);
   },
 );
 
@@ -344,16 +329,19 @@ ipcMain.on(IPC_CHANNELS.EDITOR_OUTPUT_TOGGLE, () => {
   }
 
   if (outputWindow.isVisible()) {
-    outputWindow.setFullScreen(false);
-    outputWindow.hide();
-    if (editorWindow) {
-      editorWindow.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
+    if (outputWindow.isFullScreen()) {
+      outputWindow.setFullScreen(false);
+      outputWindow.once('leave-full-screen', () => {
+        outputWindow?.hide();
+        editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
+      });
+    } else {
+      outputWindow.hide();
+      editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
     }
   } else {
     outputWindow.show();
-    if (editorWindow) {
-      editorWindow.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, true);
-    }
+    editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, true);
   }
 });
 
