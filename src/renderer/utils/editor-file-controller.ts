@@ -104,6 +104,34 @@ export class EditorFileController {
   }
 
   /**
+   * Load content that's already in memory (e.g., from another editor)
+   * Similar to load() but doesn't read from disk
+   */
+  public loadFromContent(
+    filePath: string,
+    fileName: string,
+    originalContent: string,
+    currentContent: string,
+  ): void {
+    // Set file reference and original content BEFORE setting editor value
+    // This ensures dirty state is calculated correctly when editor content changes
+    this.loadedFile = filePath;
+    this.originalContent = originalContent;
+
+    // Setting editor value triggers onDidChangeModelContent which calls updateDirtyState()
+    // The dirty state will be automatically calculated by comparing currentContent with originalContent
+    this.editor.setValue(currentContent);
+
+    this.callbacks.onFileChange(filePath, fileName);
+    this.callbacks.onStatusUpdate(STATUS_MESSAGES.READY);
+
+    // Execute post-load callback (e.g., run code)
+    if (this.callbacks.onAfterLoad) {
+      this.callbacks.onAfterLoad();
+    }
+  }
+
+  /**
    * Revert the editor to the last saved state
    */
   public async revert(): Promise<boolean> {
@@ -211,6 +239,13 @@ export class EditorFileController {
    */
   public isNewPatch(): boolean {
     return this.loadedFile === null;
+  }
+
+  /**
+   * Get the original content (last saved or loaded state)
+   */
+  public getOriginalContent(): string {
+    return this.originalContent;
   }
 
   /**

@@ -19,6 +19,7 @@ import {
   setSource as setSourceInComposer,
   saveComposer,
   newComposerPatch,
+  runComposer,
 } from './composer-tab';
 import {
   registerHydraCompletionProvider,
@@ -41,6 +42,7 @@ import {
   saveSlotA,
   saveSlotB,
   newSlotPatch,
+  runPerformerSlot,
 } from './performer-tab';
 import { initSettingsService, getSettings } from './settings-service';
 import { initSettings, showSettings, hideSettings } from './settings-tab';
@@ -314,9 +316,20 @@ window.addEventListener('patch-explorer-new-patch', () => {
 
 // Handle composer context menu - send content to performer
 window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
-  const { content, target } = event.detail as {
+  const {
+    content,
+    target,
+    filePath,
+    fileName: _fileName,
+    isDirty: _isDirty,
+    originalContent,
+  } = event.detail as {
     content: string;
     target: 'A' | 'B';
+    filePath: string | null;
+    fileName: string | null;
+    isDirty: boolean;
+    originalContent: string;
   };
 
   if (currentMainTab !== 'perform') {
@@ -326,19 +339,35 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
   const slot = target === 'A' ? getPerformerState().slotA : getPerformerState().slotB;
 
   if (slot) {
-    slot.editor.setValue(content);
-    // Keep the file reference - don't clear it, user can continue editing and save
-    slot.isDirty = true;
-    // Mark original content to force dirty state display
-    slot.originalContent = content;
+    // Maintain file relationship if there's a file path
+    if (filePath && _fileName) {
+      // Load content with file relationship - this will trigger onAfterLoad callback
+      // which automatically runs the patch
+      slot.fileController.loadFromContent(filePath, _fileName, originalContent, content);
+    } else {
+      // No file path - this is new unsaved content
+      slot.editor.setValue(content);
+      // Manually run since there's no file load callback
+      runPerformerSlot(target);
+    }
   }
 }) as EventListener);
 
 // Handle performer context menu - send content to composer
 window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
-  const { content } = event.detail as {
+  const {
+    content,
+    filePath,
+    fileName: _fileName,
+    isDirty: _isDirty,
+    originalContent,
+  } = event.detail as {
     content: string;
     source: 'A' | 'B';
+    filePath: string | null;
+    fileName: string | null;
+    isDirty: boolean;
+    originalContent: string;
   };
 
   if (currentMainTab !== 'compose') {
@@ -347,11 +376,17 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
 
   const composerState = getComposerState();
   if (composerState) {
-    composerState.editor.setValue(content);
-    // Keep the file reference - don't clear it, user can continue editing and save
-    composerState.isDirty = true;
-    // Mark original content to force dirty state display
-    composerState.originalContent = content;
+    // Maintain file relationship if there's a file path
+    if (filePath && _fileName) {
+      // Load content with file relationship - this will trigger onAfterLoad callback
+      // which automatically runs the patch
+      composerState.fileController.loadFromContent(filePath, _fileName, originalContent, content);
+    } else {
+      // No file path - this is new unsaved content
+      composerState.editor.setValue(content);
+      // Manually run since there's no file load callback
+      runComposer();
+    }
   }
 }) as EventListener);
 

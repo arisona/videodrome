@@ -202,6 +202,11 @@ function runPatch() {
   executeHydraCode(code);
 }
 
+// Run patch (exported for external use)
+export function runComposer() {
+  runPatch();
+}
+
 // Save functionality
 export async function saveComposer() {
   await composerState?.fileController.save();
@@ -329,10 +334,15 @@ solid(0, 0, 0)
       id: 'composer-open-in-performer-a',
       label: 'Open in Performer Slot A',
       run: () => {
-        const content = composerState?.editor.getValue() ?? '';
+        if (!composerState) return;
+        const content = composerState.editor.getValue();
+        const filePath = composerState.fileController.getFilePath();
+        const fileName = composerState.fileController.getFileName();
+        const isDirty = composerState.fileController.isDirty();
+        const originalContent = composerState.fileController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('composer-open-in-performer', {
-            detail: { content, target: 'A' },
+            detail: { content, target: 'A', filePath, fileName, isDirty, originalContent },
           }),
         );
       },
@@ -341,10 +351,15 @@ solid(0, 0, 0)
       id: 'composer-open-in-performer-b',
       label: 'Open in Performer Slot B',
       run: () => {
-        const content = composerState?.editor.getValue() ?? '';
+        if (!composerState) return;
+        const content = composerState.editor.getValue();
+        const filePath = composerState.fileController.getFilePath();
+        const fileName = composerState.fileController.getFileName();
+        const isDirty = composerState.fileController.isDirty();
+        const originalContent = composerState.fileController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('composer-open-in-performer', {
-            detail: { content, target: 'B' },
+            detail: { content, target: 'B', filePath, fileName, isDirty, originalContent },
           }),
         );
       },

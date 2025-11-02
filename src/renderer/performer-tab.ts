@@ -91,33 +91,49 @@ function updateFileTitle(slot: SlotState, slotId: 'A' | 'B') {
 function swapPerformerSlots(): void {
   if (!performerState.slotA || !performerState.slotB) return;
 
-  // Swap editor content
-  const contentA = performerState.slotA.editor.getValue();
-  const contentB = performerState.slotB.editor.getValue();
+  // Capture current state of both slots
+  const stateA = {
+    content: performerState.slotA.editor.getValue(),
+    filePath: performerState.slotA.fileController.getFilePath(),
+    fileName: performerState.slotA.fileController.getFileName(),
+    originalContent: performerState.slotA.fileController.getOriginalContent(),
+  };
 
-  performerState.slotA.editor.setValue(contentB);
-  performerState.slotB.editor.setValue(contentA);
+  const stateB = {
+    content: performerState.slotB.editor.getValue(),
+    filePath: performerState.slotB.fileController.getFilePath(),
+    fileName: performerState.slotB.fileController.getFileName(),
+    originalContent: performerState.slotB.fileController.getOriginalContent(),
+  };
 
-  // Swap file references
-  const fileA = performerState.slotA.loadedFile;
-  const fileB = performerState.slotB.loadedFile;
+  // Swap using file controller methods (which will trigger onAfterLoad and run the patches)
+  if (stateB.filePath && stateB.fileName) {
+    performerState.slotA.fileController.loadFromContent(
+      stateB.filePath,
+      stateB.fileName,
+      stateB.originalContent,
+      stateB.content,
+    );
+  } else {
+    // No file path - just swap content and clear file reference
+    performerState.slotA.fileController.clearFile();
+    performerState.slotA.editor.setValue(stateB.content);
+    runSlot(performerState.slotA);
+  }
 
-  performerState.slotA.loadedFile = fileB;
-  performerState.slotB.loadedFile = fileA;
-
-  // Swap original content
-  const originalA = performerState.slotA.originalContent;
-  const originalB = performerState.slotB.originalContent;
-
-  performerState.slotA.originalContent = originalB;
-  performerState.slotB.originalContent = originalA;
-
-  // Update file titles (includes dirty indicators)
-  updateFileTitle(performerState.slotA, 'A');
-  updateFileTitle(performerState.slotB, 'B');
-
-  // Re-run both slots
-  runSlot(performerState.slotA);
+  if (stateA.filePath && stateA.fileName) {
+    performerState.slotB.fileController.loadFromContent(
+      stateA.filePath,
+      stateA.fileName,
+      stateA.originalContent,
+      stateA.content,
+    );
+  } else {
+    // No file path - just swap content and clear file reference
+    performerState.slotB.fileController.clearFile();
+    performerState.slotB.editor.setValue(stateA.content);
+    runSlot(performerState.slotB);
+  }
 }
 
 function prepareSlotExecution(slot: SlotState) {
@@ -131,6 +147,14 @@ function prepareSlotExecution(slot: SlotState) {
 function runSlot(slot: SlotState) {
   prepareSlotExecution(slot);
   sendToOutputWindow();
+}
+
+// Run slot (exported for external use)
+export function runPerformerSlot(slotId: 'A' | 'B') {
+  const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
+  if (slot) {
+    runSlot(slot);
+  }
 }
 
 function sendToOutputWindow() {
@@ -624,10 +648,15 @@ export function initPerformer() {
       id: 'performer-open-in-composer-a',
       label: 'Open in Composer',
       run: () => {
-        const content = performerState.slotA?.editor.getValue() ?? '';
+        if (!performerState.slotA) return;
+        const content = performerState.slotA.editor.getValue();
+        const filePath = performerState.slotA.fileController.getFilePath();
+        const fileName = performerState.slotA.fileController.getFileName();
+        const isDirty = performerState.slotA.fileController.isDirty();
+        const originalContent = performerState.slotA.fileController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('performer-open-in-composer', {
-            detail: { content, source: 'A' },
+            detail: { content, source: 'A', filePath, fileName, isDirty, originalContent },
           }),
         );
       },
@@ -647,10 +676,15 @@ export function initPerformer() {
       id: 'performer-open-in-composer-b',
       label: 'Open in Composer',
       run: () => {
-        const content = performerState.slotB?.editor.getValue() ?? '';
+        if (!performerState.slotB) return;
+        const content = performerState.slotB.editor.getValue();
+        const filePath = performerState.slotB.fileController.getFilePath();
+        const fileName = performerState.slotB.fileController.getFileName();
+        const isDirty = performerState.slotB.fileController.isDirty();
+        const originalContent = performerState.slotB.fileController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('performer-open-in-composer', {
-            detail: { content, source: 'B' },
+            detail: { content, source: 'B', filePath, fileName, isDirty, originalContent },
           }),
         );
       },
