@@ -19,7 +19,6 @@ import {
   setSource as setSourceInComposer,
   saveComposer,
   newComposerPatch,
-  runComposer,
 } from './composer-tab';
 import {
   registerHydraCompletionProvider,
@@ -42,7 +41,6 @@ import {
   saveSlotA,
   saveSlotB,
   newSlotPatch,
-  runPerformerSlot,
 } from './performer-tab';
 import { initSettingsService, getSettings } from './settings-service';
 import { initSettings, showSettings, hideSettings } from './settings-tab';
@@ -339,16 +337,22 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
   const slot = target === 'A' ? getPerformerState().slotA : getPerformerState().slotB;
 
   if (slot) {
-    // Maintain file relationship if there's a file path
+    // Load content using unified load method
     if (filePath && _fileName) {
-      // Load content with file relationship - this will trigger onAfterLoad callback
-      // which automatically runs the patch
-      slot.fileController.loadFromContent(filePath, _fileName, originalContent, content);
+      // Load with file relationship
+      void slot.fileController.load({
+        source: 'memory',
+        filePath,
+        fileName: _fileName,
+        content,
+        originalContent,
+      });
     } else {
-      // No file path - this is new unsaved content
-      slot.editor.setValue(content);
-      // Manually run since there's no file load callback
-      runPerformerSlot(target);
+      // Load as new patch without file relationship
+      void slot.fileController.load({
+        source: 'new',
+        content,
+      });
     }
   }
 }) as EventListener);
@@ -376,16 +380,22 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
 
   const composerState = getComposerState();
   if (composerState) {
-    // Maintain file relationship if there's a file path
+    // Load content using unified load method
     if (filePath && _fileName) {
-      // Load content with file relationship - this will trigger onAfterLoad callback
-      // which automatically runs the patch
-      composerState.fileController.loadFromContent(filePath, _fileName, originalContent, content);
+      // Load with file relationship
+      void composerState.fileController.load({
+        source: 'memory',
+        filePath,
+        fileName: _fileName,
+        content,
+        originalContent,
+      });
     } else {
-      // No file path - this is new unsaved content
-      composerState.editor.setValue(content);
-      // Manually run since there's no file load callback
-      runComposer();
+      // Load as new patch without file relationship
+      void composerState.fileController.load({
+        source: 'new',
+        content,
+      });
     }
   }
 }) as EventListener);

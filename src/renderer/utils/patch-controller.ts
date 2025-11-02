@@ -8,15 +8,52 @@ import { getFilename } from './path';
 import type * as monaco from 'monaco-editor';
 
 /**
- * Callbacks for file operation events
+ * User action for dirty content before loading new patch
  */
-export interface FileControllerCallbacks {
+export type BeforeLoadAction = 'save' | 'discard' | 'cancel';
+
+/**
+ * Current patch state passed to onBeforeLoad callback
+ */
+export interface PatchState {
+  content: string;
+  filePath: string | null;
+  fileName: string | null;
+  isDirty: boolean;
+}
+
+/**
+ * Options for loading a patch
+ */
+export interface LoadOptions {
+  /** Source of the patch content */
+  source: 'disk' | 'memory' | 'new';
+  /** File path (required for 'disk', optional for 'memory') */
+  filePath?: string;
+  /** File name (required for 'disk', optional for 'memory') */
+  fileName?: string;
+  /** Patch content (required for 'memory' and 'new', ignored for 'disk') */
+  content?: string;
+  /** Original (saved) content for dirty tracking (optional for 'memory', ignored otherwise) */
+  originalContent?: string;
+}
+
+/**
+ * Callbacks for patch operation events
+ */
+export interface PatchControllerCallbacks {
   /** Called when status message should be updated */
   onStatusUpdate: (message: string, isError?: boolean) => void;
   /** Called when dirty state changes */
   onDirtyChange: (isDirty: boolean) => void;
   /** Called when the loaded file changes (or is cleared) */
   onFileChange: (filePath: string | null, fileName: string | null) => void;
+  /**
+   * Called before loading new content when current content is dirty
+   * Should prompt user and return their choice: 'save', 'discard', or 'cancel'
+   * If not provided, defaults to 'discard' (no protection)
+   */
+  onBeforeLoad?: (currentState: PatchState) => Promise<BeforeLoadAction> | BeforeLoadAction;
   /** Called after a file is loaded (e.g., to run code) */
   onAfterLoad?: () => void;
   /** Called after a file is reverted (e.g., to run code) */
@@ -24,21 +61,21 @@ export interface FileControllerCallbacks {
 }
 
 /**
- * EditorFileController - Manages file operations for a Monaco editor
+ * PatchController - Manages patch operations for a Monaco editor
  *
- * Encapsulates file state (loadedFile, isDirty, originalContent) and operations (save, load, revert).
- * Works with both saved files and "new patches" (no file connection).
+ * Encapsulates patch state (file path, dirty state, content) and operations (save, load, revert).
+ * Works with both file-based patches and in-memory patches (no file connection).
  */
-export class EditorFileController {
+export class PatchController {
   private editor: monaco.editor.IStandaloneCodeEditor;
-  private callbacks: FileControllerCallbacks;
+  private callbacks: PatchControllerCallbacks;
 
   // File state
   private loadedFile: string | null = null;
   private originalContent = '';
   private _isDirty = false;
 
-  constructor(editor: monaco.editor.IStandaloneCodeEditor, callbacks: FileControllerCallbacks) {
+  constructor(editor: monaco.editor.IStandaloneCodeEditor, callbacks: PatchControllerCallbacks) {
     this.editor = editor;
     this.callbacks = callbacks;
 
@@ -77,20 +114,93 @@ export class EditorFileController {
   }
 
   /**
-   * Load a file into the editor
+   * Unified load method for all patch loading scenarios
+   * Handles dirty state checking, user prompts, and various load sources
    */
-  public async load(filePath: string, fileName: string): Promise<boolean> {
-    try {
-      const content = await window.electronAPI.readPatch(filePath);
-      this.editor.setValue(content);
-      this.loadedFile = filePath;
-      this.originalContent = content;
-      this.setDirty(false);
+  public async load(options: LoadOptions): Promise<boolean> {
+    // Step 1: Check dirty state and handle user choice if needed
+    if (this._isDirty && this.callbacks.onBeforeLoad) {
+      const currentState: PatchState = {
+        content: this.editor.getValue(),
+        filePath: this.loadedFile,
+        fileName: this.loadedFile ? getFilename(this.loadedFile) : null,
+        isDirty: true,
+      };
 
-      this.callbacks.onFileChange(filePath, fileName);
+      const action = await this.callbacks.onBeforeLoad(currentState);
+
+      if (action === 'cancel') {
+        return false; // User cancelled, don't load
+      }
+
+      if (action === 'save') {
+        // Try to save current content
+        const saved = await this.save();
+        if (!saved) {
+          // Save failed, don't proceed with load
+          return false;
+        }
+      }
+
+      // If action === 'discard', just continue with load
+    }
+
+    // Step 2: Load content based on source type
+    try {
+      let contentToLoad: string;
+      let newFilePath: string | null;
+      let newFileName: string | null;
+      let newOriginalContent: string;
+
+      switch (options.source) {
+        case 'disk': {
+          // Load from disk
+          if (!options.filePath || !options.fileName) {
+            throw new Error('filePath and fileName required for disk source');
+          }
+          contentToLoad = await window.electronAPI.readPatch(options.filePath);
+          newFilePath = options.filePath;
+          newFileName = options.fileName;
+          newOriginalContent = contentToLoad; // Disk content is the original
+          break;
+        }
+
+        case 'memory': {
+          // Load from memory (e.g., from another editor)
+          if (options.content === undefined) {
+            throw new Error('content required for memory source');
+          }
+          contentToLoad = options.content;
+          newFilePath = options.filePath ?? null;
+          newFileName = options.fileName ?? null;
+          newOriginalContent = options.originalContent ?? options.content;
+          break;
+        }
+
+        case 'new': {
+          // Create new patch
+          contentToLoad = options.content ?? '';
+          newFilePath = null;
+          newFileName = null;
+          newOriginalContent = '';
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown source type: ${String(options.source)}`);
+      }
+
+      // Step 3: Update state and set editor content
+      this.loadedFile = newFilePath;
+      this.originalContent = newOriginalContent;
+
+      // Setting editor value triggers onDidChangeModelContent which calculates dirty state
+      this.editor.setValue(contentToLoad);
+
+      // Step 4: Trigger callbacks
+      this.callbacks.onFileChange(newFilePath, newFileName);
       this.callbacks.onStatusUpdate(STATUS_MESSAGES.READY);
 
-      // Execute post-load callback (e.g., run code)
       if (this.callbacks.onAfterLoad) {
         this.callbacks.onAfterLoad();
       }
@@ -98,37 +208,40 @@ export class EditorFileController {
       return true;
     } catch (error) {
       console.error('Error loading patch:', error);
-      this.callbacks.onStatusUpdate(`Error loading ${fileName}`, true);
+      const errorMsg =
+        options.source === 'disk' && options.fileName
+          ? `Error loading ${options.fileName}`
+          : 'Error loading patch';
+      this.callbacks.onStatusUpdate(errorMsg, true);
       return false;
     }
   }
 
   /**
-   * Load content that's already in memory (e.g., from another editor)
-   * Similar to load() but doesn't read from disk
+   * @deprecated Use load() with LoadOptions instead
+   * Legacy method for backward compatibility during migration
+   */
+  public async loadFromDisk(filePath: string, fileName: string): Promise<boolean> {
+    return this.load({ source: 'disk', filePath, fileName });
+  }
+
+  /**
+   * @deprecated Use load() with LoadOptions instead
+   * Legacy method for backward compatibility during migration
    */
   public loadFromContent(
     filePath: string,
     fileName: string,
     originalContent: string,
     currentContent: string,
-  ): void {
-    // Set file reference and original content BEFORE setting editor value
-    // This ensures dirty state is calculated correctly when editor content changes
-    this.loadedFile = filePath;
-    this.originalContent = originalContent;
-
-    // Setting editor value triggers onDidChangeModelContent which calls updateDirtyState()
-    // The dirty state will be automatically calculated by comparing currentContent with originalContent
-    this.editor.setValue(currentContent);
-
-    this.callbacks.onFileChange(filePath, fileName);
-    this.callbacks.onStatusUpdate(STATUS_MESSAGES.READY);
-
-    // Execute post-load callback (e.g., run code)
-    if (this.callbacks.onAfterLoad) {
-      this.callbacks.onAfterLoad();
-    }
+  ): Promise<boolean> {
+    return this.load({
+      source: 'memory',
+      filePath,
+      fileName,
+      content: currentContent,
+      originalContent,
+    });
   }
 
   /**
@@ -202,15 +315,11 @@ export class EditorFileController {
   }
 
   /**
-   * Clear the loaded file (for creating a new patch)
+   * Clear the loaded file and create a new patch
+   * Note: This checks dirty state and may prompt the user
    */
-  public clearFile(): void {
-    this.loadedFile = null;
-    this.originalContent = '';
-    this.editor.setValue('');
-    this.setDirty(false);
-    this.callbacks.onFileChange(null, null);
-    this.callbacks.onStatusUpdate(STATUS_MESSAGES.READY);
+  public async clearFile(): Promise<boolean> {
+    return this.load({ source: 'new' });
   }
 
   /**

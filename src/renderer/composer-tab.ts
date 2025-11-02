@@ -14,8 +14,8 @@ import {
 } from './hydra/hydra-execution';
 import { registerContextMenuActions } from './monaco-setup';
 import { requireElementById } from './utils/dom';
-import { EditorFileController } from './utils/editor-file-controller';
 import * as EditorState from './utils/editor-state';
+import { PatchController } from './utils/patch-controller';
 
 import type { MediaType } from '../shared/types';
 import type { HydraSourceSlot } from 'hydra-synth';
@@ -26,7 +26,7 @@ const MARKER_OWNER = 'hydra-composer';
 interface ComposerState {
   editorPanel: MonacoEditorPanel;
   editor: monaco.editor.IStandaloneCodeEditor;
-  fileController: EditorFileController;
+  fileController: PatchController;
   statusElement: HTMLElement;
   hydra: Hydra | null;
   isActive: boolean;
@@ -62,7 +62,7 @@ function updateFileTitle() {
     fileNameElement.textContent = `${fileName}${dirtyIndicator}`;
     fileNameElement.classList.remove('is-new-patch');
   } else {
-    fileNameElement.textContent = `New Patch${dirtyIndicator}`;
+    fileNameElement.textContent = `Untitled${dirtyIndicator}`;
     fileNameElement.classList.add('is-new-patch');
   }
 }
@@ -223,12 +223,16 @@ export async function revertComposer() {
 
 // Load patch into composer
 export async function loadPatchIntoComposer(patchPath: string, patchName: string) {
-  await composerState?.fileController.load(patchPath, patchName);
+  await composerState?.fileController.load({
+    source: 'disk',
+    filePath: patchPath,
+    fileName: patchName,
+  });
 }
 
 // Create new patch in composer
 export function newComposerPatch() {
-  composerState?.fileController.clearFile();
+  void composerState?.fileController.clearFile();
 }
 
 // Initialize composer tab
@@ -288,7 +292,7 @@ solid(0, 0, 0)
   const editor = editorPanel.getEditor();
 
   // Initialize file controller first
-  const fileController = new EditorFileController(editor, {
+  const fileController = new PatchController(editor, {
     onStatusUpdate: (msg, isError) => {
       updateStatus(msg, isError);
     },
@@ -297,6 +301,10 @@ solid(0, 0, 0)
     },
     onFileChange: () => {
       updateFileTitle();
+    },
+    onBeforeLoad: (_currentState) => {
+      const confirmed = window.confirm('Composer slot is modified.\n\nClick OK to overwrite.');
+      return confirmed ? 'discard' : 'cancel';
     },
     onAfterLoad: () => {
       runPatch();

@@ -256,28 +256,17 @@ app.on('before-quit', (event) => {
         return;
       }
 
-      // Show dialog for unsaved changes
-      const result = await dialog.showMessageBox(editorWindow, {
-        type: 'warning',
-        title: 'Unsaved Changes',
-        message: 'Do you want to save your changes before quitting?',
-        detail: "Your changes will be lost if you don't save them.",
-        buttons: ['Save', "Don't Save", 'Cancel'],
-        defaultId: 0,
-        cancelId: 2,
-      });
+      // Show confirm dialog for unsaved changes
+      const confirmed = (await editorWindow.webContents.executeJavaScript(
+        'window.confirm("You have unsaved changes.\\n\\nClick OK to quit without saving.")',
+      )) as boolean;
 
-      if (result.response === 2) {
+      if (!confirmed) {
         // Cancel - do nothing, stay open
         return;
       }
 
-      if (result.response === 0) {
-        // Save - trigger save all
-        await editorWindow.webContents.executeJavaScript('window.quitHandlers.saveAllBeforeQuit()');
-      }
-
-      // Proceed with quit (either after saving or without saving)
+      // OK - proceed with quit without saving
       appIsQuitting = true;
       app.quit();
     } catch (error) {

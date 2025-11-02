@@ -19,8 +19,8 @@ import {
 import { registerContextMenuActions } from './monaco-setup';
 import { getSettings } from './settings-service';
 import { requireElementById } from './utils/dom';
-import { EditorFileController } from './utils/editor-file-controller';
 import * as EditorState from './utils/editor-state';
+import { PatchController } from './utils/patch-controller';
 
 import type { ExecutionResultsPayload, PreviewFrame, SlotExecutionResult } from '../shared/types';
 
@@ -31,7 +31,7 @@ const MODAL_HOVER_DELAY_MS = 1000;
 interface SlotState {
   editorPanel: MonacoEditorPanel;
   editor: monaco.editor.IStandaloneCodeEditor;
-  fileController: EditorFileController;
+  fileController: PatchController;
   statusElement: HTMLElement;
   previewCanvas: HTMLCanvasElement;
   previewContext: CanvasRenderingContext2D | null;
@@ -82,7 +82,7 @@ function updateFileTitle(slot: SlotState, slotId: 'A' | 'B') {
     fileNameElement.textContent = `${slotId}: ${fileName}${dirtyIndicator}`;
     fileNameElement.classList.remove('is-new-patch');
   } else {
-    fileNameElement.textContent = `${slotId}: New Patch${dirtyIndicator}`;
+    fileNameElement.textContent = `${slotId}: Untitled${dirtyIndicator}`;
     fileNameElement.classList.add('is-new-patch');
   }
 }
@@ -108,31 +108,35 @@ function swapPerformerSlots(): void {
 
   // Swap using file controller methods (which will trigger onAfterLoad and run the patches)
   if (stateB.filePath && stateB.fileName) {
-    performerState.slotA.fileController.loadFromContent(
-      stateB.filePath,
-      stateB.fileName,
-      stateB.originalContent,
-      stateB.content,
-    );
+    void performerState.slotA.fileController.load({
+      source: 'memory',
+      filePath: stateB.filePath,
+      fileName: stateB.fileName,
+      content: stateB.content,
+      originalContent: stateB.originalContent,
+    });
   } else {
-    // No file path - just swap content and clear file reference
-    performerState.slotA.fileController.clearFile();
-    performerState.slotA.editor.setValue(stateB.content);
-    runSlot(performerState.slotA);
+    // No file path - load as new patch with the content
+    void performerState.slotA.fileController.load({
+      source: 'new',
+      content: stateB.content,
+    });
   }
 
   if (stateA.filePath && stateA.fileName) {
-    performerState.slotB.fileController.loadFromContent(
-      stateA.filePath,
-      stateA.fileName,
-      stateA.originalContent,
-      stateA.content,
-    );
+    void performerState.slotB.fileController.load({
+      source: 'memory',
+      filePath: stateA.filePath,
+      fileName: stateA.fileName,
+      content: stateA.content,
+      originalContent: stateA.originalContent,
+    });
   } else {
-    // No file path - just swap content and clear file reference
-    performerState.slotB.fileController.clearFile();
-    performerState.slotB.editor.setValue(stateA.content);
-    runSlot(performerState.slotB);
+    // No file path - load as new patch with the content
+    void performerState.slotB.fileController.load({
+      source: 'new',
+      content: stateA.content,
+    });
   }
 }
 
@@ -461,7 +465,7 @@ export async function loadPatchIntoSlot(patchPath: string, patchName: string, sl
   const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
   if (!slot) return;
 
-  await slot.fileController.load(patchPath, patchName);
+  await slot.fileController.load({ source: 'disk', filePath: patchPath, fileName: patchName });
 }
 
 // Create new patch in slot
@@ -469,7 +473,7 @@ export function newSlotPatch(slotId: 'A' | 'B') {
   const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
   if (!slot) return;
 
-  slot.fileController.clearFile();
+  void slot.fileController.clearFile();
 }
 
 // Setup drop zone for slot
@@ -569,7 +573,7 @@ export function initPerformer() {
   const editorB = editorPanelB.getEditor();
 
   // Initialize file controllers
-  const fileControllerA = new EditorFileController(editorA, {
+  const fileControllerA = new PatchController(editorA, {
     onStatusUpdate: (msg, isError) => {
       if (performerState.slotA) updateSlotStatus(performerState.slotA, msg, isError);
     },
@@ -579,6 +583,10 @@ export function initPerformer() {
     onFileChange: () => {
       if (performerState.slotA) updateFileTitle(performerState.slotA, 'A');
     },
+    onBeforeLoad: (_currentState) => {
+      const confirmed = window.confirm('Performer slot A is modified.\n\nClick OK to overwrite.');
+      return confirmed ? 'discard' : 'cancel';
+    },
     onAfterLoad: () => {
       if (performerState.slotA) runSlot(performerState.slotA);
     },
@@ -587,7 +595,7 @@ export function initPerformer() {
     },
   });
 
-  const fileControllerB = new EditorFileController(editorB, {
+  const fileControllerB = new PatchController(editorB, {
     onStatusUpdate: (msg, isError) => {
       if (performerState.slotB) updateSlotStatus(performerState.slotB, msg, isError);
     },
@@ -596,6 +604,10 @@ export function initPerformer() {
     },
     onFileChange: () => {
       if (performerState.slotB) updateFileTitle(performerState.slotB, 'B');
+    },
+    onBeforeLoad: (_currentState) => {
+      const confirmed = window.confirm('Performer slot B is modified.\n\nClick OK to overwrite.');
+      return confirmed ? 'discard' : 'cancel';
     },
     onAfterLoad: () => {
       if (performerState.slotB) runSlot(performerState.slotB);
