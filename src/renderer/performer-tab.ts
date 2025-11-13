@@ -7,6 +7,7 @@ import {
   getCompositeFunction,
 } from '../shared/composite-functions';
 import { STATUS_MESSAGES } from '../shared/constants';
+import { debounce, type DebouncedFunction } from '../shared/debounce';
 
 import { showDocumentationModal } from './components/modal';
 import { MonacoEditorPanel } from './components/monaco-editor-panel';
@@ -248,65 +249,57 @@ function setupLabelHover(
   param: { min: number; max: number; default: number; label: string; key: string; step?: number },
   updateValue: (value: number) => void,
 ) {
-  let hoverTimer: ReturnType<typeof setTimeout> | null = null;
-
   // Store current value for this parameter
   const getCurrentValue = () => {
     return performerState.compositeParams[param.key] ?? param.default;
   };
 
-  labelElement.addEventListener('mouseenter', () => {
-    // Clear any existing timer
-    if (hoverTimer) {
-      clearTimeout(hoverTimer);
+  const showWidget = () => {
+    if (!getSettings().parameterControl.enabled) {
+      return;
     }
 
-    // Set timer to show widget after delay
-    hoverTimer = setTimeout(() => {
-      if (!getSettings().parameterControl.enabled) {
-        return;
-      }
+    const currentValue = getCurrentValue();
 
-      const currentValue = getCurrentValue();
+    // Create the parameter control widget
+    const widget = new StandaloneParameterControl(currentValue, {
+      min: param.min,
+      max: param.max,
+      default: param.default,
+      onUpdate: (value: number) => {
+        updateValue(value);
+        sendToOutputWindow();
+      },
+      onCommit: (value: number) => {
+        updateValue(value);
+        sendToOutputWindow();
+      },
+      onCancel: () => {
+        // Restore previous value
+        updateValue(currentValue);
+        sendToOutputWindow();
+      },
+    });
 
-      // Create the parameter control widget
-      const widget = new StandaloneParameterControl(currentValue, {
-        min: param.min,
-        max: param.max,
-        default: param.default,
-        onUpdate: (value: number) => {
-          updateValue(value);
-          sendToOutputWindow();
-        },
-        onCommit: (value: number) => {
-          updateValue(value);
-          sendToOutputWindow();
-        },
-        onCancel: () => {
-          // Restore previous value
-          updateValue(currentValue);
-          sendToOutputWindow();
-        },
-      });
+    // Position the widget near the label
+    const rect = labelElement.getBoundingClientRect();
+    const compositorBar = document.getElementById('editor-performer-compositor-bar');
+    if (compositorBar && widget.getDomNode()) {
+      widget.attachTo(compositorBar, rect.left, rect.top - 120); // Position above the label
+    }
 
-      // Position the widget near the label
-      const rect = labelElement.getBoundingClientRect();
-      const compositorBar = document.getElementById('editor-performer-compositor-bar');
-      if (compositorBar && widget.getDomNode()) {
-        widget.attachTo(compositorBar, rect.left, rect.top - 120); // Position above the label
-      }
+    // Register this widget in the central registry (will auto-dispose any previous widget)
+    registerParameterControl(widget);
+  };
 
-      // Register this widget in the central registry (will auto-dispose any previous widget)
-      registerParameterControl(widget);
-    }, HOVER_DELAY_MS);
+  const debouncedShowWidget: DebouncedFunction<() => void> = debounce(showWidget, HOVER_DELAY_MS);
+
+  labelElement.addEventListener('mouseenter', () => {
+    debouncedShowWidget();
   });
 
   labelElement.addEventListener('mouseleave', () => {
-    // Clear the hover timer if we leave before it triggers
-    if (hoverTimer) {
-      clearTimeout(hoverTimer);
-      hoverTimer = null;
-    }
+    debouncedShowWidget.cancel();
   });
 }
 
@@ -824,28 +817,19 @@ export function initPerformer() {
   );
   if (compositeLabelElements.length > 0) {
     const compositeLabel = compositeLabelElements[0] as HTMLElement;
-    let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const debouncedShowDocs: DebouncedFunction<() => void> = debounce(() => {
+      if (compositeModeSelect) {
+        showCompositeFunctionDocs(compositeModeSelect.value);
+      }
+    }, MODAL_HOVER_DELAY_MS);
 
     compositeLabel.addEventListener('mouseenter', () => {
-      // Clear any existing timer
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-      }
-
-      // Set timer to show documentation after delay
-      hoverTimer = setTimeout(() => {
-        if (compositeModeSelect) {
-          showCompositeFunctionDocs(compositeModeSelect.value);
-        }
-      }, MODAL_HOVER_DELAY_MS);
+      debouncedShowDocs();
     });
 
     compositeLabel.addEventListener('mouseleave', () => {
-      // Clear the hover timer if we leave before it triggers
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        hoverTimer = null;
-      }
+      debouncedShowDocs.cancel();
     });
   }
 

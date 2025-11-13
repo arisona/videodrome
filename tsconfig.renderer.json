@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": []
   },
   "include": ["src/renderer/**/*", "src/shared/**/*"],
   "exclude": ["node_modules"]

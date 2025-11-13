@@ -4,9 +4,9 @@ import * as path from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain, MessageChannelMain, screen } from 'electron';
 
 import { FILE_EXTENSIONS, IPC_CHANNELS, APP_CONFIG } from '../shared/constants';
+import { debounce } from '../shared/debounce';
 
 import { ensureDirectoriesExist, getDocumentsPath, loadSettings, saveSettings } from './settings';
-import { debounce } from './utils/debounce';
 import { scanDirectory } from './utils/file-scanning';
 import { collectMediaFiles } from './utils/media';
 import { isPathWithinRoot, isValidName, safeJoin } from './utils/path-security';

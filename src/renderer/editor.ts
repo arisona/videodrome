@@ -74,7 +74,7 @@ let currentMainTab: MainTab = 'compose';
 
 // Current explorer tab
 type ExplorerTab = 'patches' | 'media';
-let currentTab: ExplorerTab = 'patches';
+let currentExplorerTab: ExplorerTab = 'patches';
 
 // Global source assignments (persisted across tab switches and sent to all Hydra instances)
 interface SourceAssignment {
@@ -134,10 +134,10 @@ function updateMainTabButtons() {
 }
 
 // Switch explorer tabs
-function switchExplorerTab(newTab: ExplorerTab) {
-  if (newTab === currentTab) return;
+function showExplorerTab(newTab: ExplorerTab, force = false) {
+  if (newTab === currentExplorerTab && !force) return;
 
-  currentTab = newTab;
+  currentExplorerTab = newTab;
 
   const patchesTab = document.getElementById('patches-tab');
   const mediaTab = document.getElementById('media-tab');
@@ -158,8 +158,8 @@ function switchExplorerTab(newTab: ExplorerTab) {
 }
 
 // Switch between main tabs
-function switchMainTabs(newTab: MainTab) {
-  if (newTab === currentMainTab) return;
+function showMainTab(newTab: MainTab, force = false) {
+  if (newTab === currentMainTab && !force) return;
 
   currentMainTab = newTab;
 
@@ -201,29 +201,29 @@ function switchMainTabs(newTab: MainTab) {
 
 // Main tab handlers
 document.getElementById('composer-tab-btn')?.addEventListener('click', () => {
-  switchMainTabs('compose');
+  showMainTab('compose');
 });
 
 document.getElementById('performer-tab-btn')?.addEventListener('click', () => {
-  switchMainTabs('perform');
+  showMainTab('perform');
 });
 
 document.getElementById('sources-tab-btn')?.addEventListener('click', () => {
-  switchMainTabs('sources');
+  showMainTab('sources');
 });
 
 // Explorer tab handlers
 document.getElementById('patches-tab')?.addEventListener('click', () => {
-  switchExplorerTab('patches');
+  showExplorerTab('patches');
 });
 
 document.getElementById('media-tab')?.addEventListener('click', () => {
-  switchExplorerTab('media');
+  showExplorerTab('media');
 });
 
 // Listen for custom event to switch to patches tab (e.g., when revealing a file)
 window.addEventListener('switch-to-patches-tab', () => {
-  switchExplorerTab('patches');
+  showExplorerTab('patches');
 });
 
 document.getElementById('toggle-output-btn')?.addEventListener('click', (event) => {
@@ -235,7 +235,7 @@ document.getElementById('toggle-output-btn')?.addEventListener('click', (event) 
 });
 
 document.getElementById('settings-btn')?.addEventListener('click', () => {
-  switchMainTabs('settings');
+  showMainTab('settings');
 });
 
 // Listen for output window state changes
@@ -290,18 +290,18 @@ window.addEventListener('patch-explorer-open-patch', ((event: CustomEvent) => {
 
   if (target === 'composer') {
     if (currentMainTab !== 'compose') {
-      switchMainTabs('compose');
+      showMainTab('compose');
     }
     void loadPatchIntoComposer(patchPath, patchName);
   } else if (target === 'performer-a') {
     if (currentMainTab !== 'perform') {
-      switchMainTabs('perform');
+      showMainTab('perform');
     }
     void loadPatchIntoSlot(patchPath, patchName, 'A');
   } else {
     // if (target === 'performer-b')
     if (currentMainTab !== 'perform') {
-      switchMainTabs('perform');
+      showMainTab('perform');
     }
     void loadPatchIntoSlot(patchPath, patchName, 'B');
   }
@@ -331,7 +331,7 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
   };
 
   if (currentMainTab !== 'perform') {
-    switchMainTabs('perform');
+    showMainTab('perform');
   }
 
   const slot = target === 'A' ? getPerformerState().slotA : getPerformerState().slotB;
@@ -375,7 +375,7 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
   };
 
   if (currentMainTab !== 'compose') {
-    switchMainTabs('compose');
+    showMainTab('compose');
   }
 
   const composerState = getComposerState();
@@ -646,7 +646,7 @@ function setupGlobalKeyboardShortcuts() {
     // Cmd+1 - Switch to Composer tab and focus editor
     if (event.key === '1') {
       event.preventDefault();
-      switchMainTabs('compose');
+      showMainTab('compose');
       const state = getComposerState();
       if (state) {
         state.editor.focus();
@@ -657,7 +657,7 @@ function setupGlobalKeyboardShortcuts() {
     // Cmd+2 - Switch to Performer tab and focus slot A editor
     if (event.key === '2') {
       event.preventDefault();
-      switchMainTabs('perform');
+      showMainTab('perform');
       const performerState = getPerformerState();
       if (performerState.slotA) {
         performerState.slotA.editor.focus();
@@ -668,7 +668,7 @@ function setupGlobalKeyboardShortcuts() {
     // Cmd+3 - Switch to Performer tab and focus slot B editor
     if (event.key === '3') {
       event.preventDefault();
-      switchMainTabs('perform');
+      showMainTab('perform');
       const performerState = getPerformerState();
       if (performerState.slotB) {
         performerState.slotB.editor.focus();
@@ -679,7 +679,7 @@ function setupGlobalKeyboardShortcuts() {
     // Cmd+4 - Switch to Sources tab
     if (event.key === '4') {
       event.preventDefault();
-      switchMainTabs('sources');
+      showMainTab('sources');
       return;
     }
   });
@@ -750,7 +750,7 @@ void (async () => {
   await loadPatches();
   await loadMedia();
 
-  // Start in compose tab - force show since currentMainTab is already 'compose'
-  currentMainTab = 'perform'; // Temporarily set to different tab
-  switchMainTabs('compose'); // Now switchMainTabs will actually execute showComposer()
+  // Start in file explorer and composeer tab
+  showExplorerTab('patches', true);
+  showMainTab('compose', true);
 })();

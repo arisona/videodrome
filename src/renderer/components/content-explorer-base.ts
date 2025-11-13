@@ -1,5 +1,7 @@
 /* eslint-env browser */
 
+import { debounce, type DebouncedFunction } from '../../shared/debounce';
+
 /**
  * Base interface for items that can be displayed in the explorer
  */
@@ -34,7 +36,6 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
   protected allItems: Array<T> = [];
   protected expandedFolders = new Set<string>();
   protected searchQuery = '';
-  protected searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   protected selectedPath: string | null = null;
 
   // DOM elements
@@ -46,6 +47,9 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
   // Configuration
   protected config: ExplorerConfig<T>;
 
+  // Debounced search handler
+  protected debouncedSearch: DebouncedFunction<() => void>;
+
   constructor(config: ExplorerConfig<T>) {
     this.config = config;
 
@@ -54,6 +58,12 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
     this.searchInput = document.getElementById(config.searchInputId) as HTMLInputElement;
     this.searchClearBtn = document.getElementById(config.searchClearBtnId) as HTMLButtonElement;
     this.sidebarContent = document.getElementById(config.sidebarContentId);
+
+    this.debouncedSearch = debounce(() => {
+      this.searchQuery = this.searchInput.value.trim();
+      this.updateClearButtonVisibility();
+      this.renderList();
+    }, SEARCH_DEBOUNCE_MS);
 
     this.setupEventListeners();
     this.setupLiveUpdates();
@@ -65,14 +75,7 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
   private setupEventListeners(): void {
     // Search functionality
     this.searchInput.addEventListener('input', () => {
-      if (this.searchDebounceTimer) {
-        clearTimeout(this.searchDebounceTimer);
-      }
-      this.searchDebounceTimer = setTimeout(() => {
-        this.searchQuery = this.searchInput.value.trim();
-        this.updateClearButtonVisibility();
-        this.renderList();
-      }, SEARCH_DEBOUNCE_MS);
+      this.debouncedSearch();
     });
 
     // Clear button
@@ -147,6 +150,9 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
    * Clear search query and refresh list
    */
   protected clearSearch(): void {
+    // Cancel any pending debounced search
+    this.debouncedSearch.cancel();
+
     this.searchInput.value = '';
     this.searchQuery = '';
     this.updateClearButtonVisibility();

@@ -1,5 +1,7 @@
 /* eslint-env browser */
 
+import { debounce } from '../../shared/debounce';
+
 /**
  * Custom tooltip system for reliable tooltip display in Electron
  *
@@ -13,8 +15,11 @@ const TOOLTIP_OFFSET_X = 10; // Offset from cursor
 const TOOLTIP_OFFSET_Y = 10;
 
 let tooltipElement: HTMLDivElement | null = null;
-let showTimer: ReturnType<typeof setTimeout> | null = null;
 let currentTarget: HTMLElement | null = null;
+
+const debouncedShowTooltip = debounce((text: string, x: number, y: number) => {
+  showTooltip(text, x, y);
+}, TOOLTIP_DELAY_MS);
 
 /**
  * Initialize the tooltip system
@@ -74,16 +79,8 @@ function handleMouseOver(event: MouseEvent): void {
     tooltipTarget.removeAttribute('title');
   }
 
-  // Clear any existing timer
-  if (showTimer) {
-    clearTimeout(showTimer);
-  }
-
-  // Set timer to show tooltip after delay
-  showTimer = setTimeout(() => {
-    showTooltip(tooltipText, event.clientX, event.clientY);
-    showTimer = null;
-  }, TOOLTIP_DELAY_MS);
+  // Show tooltip after delay (debounced)
+  debouncedShowTooltip(tooltipText, event.clientX, event.clientY);
 }
 
 function handleMouseOut(event: MouseEvent): void {
@@ -108,10 +105,8 @@ function showTooltip(text: string, x: number, y: number): void {
 }
 
 function hideTooltip(): void {
-  if (showTimer) {
-    clearTimeout(showTimer);
-    showTimer = null;
-  }
+  // Cancel any pending tooltip show
+  debouncedShowTooltip.cancel();
 
   if (tooltipElement) {
     tooltipElement.classList.remove('show');

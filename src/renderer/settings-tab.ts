@@ -1,6 +1,7 @@
 /* eslint-env browser */
 
 import { DEFAULT_SETTINGS } from '../shared/constants';
+import { debounce } from '../shared/debounce';
 
 import { getSettings, getDefaultSettings, updateSettings } from './settings-service';
 
@@ -16,7 +17,6 @@ let onMediaDirectoryChanged: (() => Promise<void>) | null = null;
 interface SettingsState {
   isActive: boolean;
   currentSettings: Settings;
-  autoSaveTimeout: number | null;
 }
 
 let settingsState: SettingsState | null = null;
@@ -142,7 +142,6 @@ export function initSettings(
   settingsState = {
     isActive: false,
     currentSettings,
-    autoSaveTimeout: null,
   };
 
   // Populate form with current settings
@@ -213,16 +212,18 @@ function getFormSettings(): Settings {
   };
 }
 
+async function performSettingsSave() {
+  if (!settingsState) return;
+  const newSettings = getFormSettings();
+  settingsState.currentSettings = await updateSettings(newSettings);
+}
+const debouncedSettingsSave = debounce(performSettingsSave, AUTO_SAVE_DEBOUNCE_MS);
+
 /**
  * Auto-save settings with debouncing
  */
 async function autoSaveSettings(directoryChanged?: 'patch' | 'media') {
   if (!settingsState) return;
-
-  // Clear existing timeout
-  if (settingsState.autoSaveTimeout !== null) {
-    clearTimeout(settingsState.autoSaveTimeout);
-  }
 
   // For directory changes, save immediately and refresh
   if (directoryChanged) {
@@ -249,14 +250,7 @@ async function autoSaveSettings(directoryChanged?: 'patch' | 'media') {
     return;
   }
 
-  // For other settings, debounce the save
-  settingsState.autoSaveTimeout = window.setTimeout(() => {
-    void (async () => {
-      if (!settingsState) return;
-      const newSettings = getFormSettings();
-      settingsState.currentSettings = await updateSettings(newSettings);
-    })();
-  }, AUTO_SAVE_DEBOUNCE_MS);
+  debouncedSettingsSave();
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import * as monaco from 'monaco-editor';
 
+import { debounce, type DebouncedFunction } from '../../shared/debounce';
 import { createHydraEditor } from '../monaco-setup';
 import { getSettings } from '../settings-service';
 
@@ -42,9 +43,9 @@ export class MonacoEditorPanel {
   private editor: monaco.editor.IStandaloneCodeEditor;
   private config: MonacoEditorPanelConfig;
   private disposables: Array<IDisposable> = [];
-  private parameterControlDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private hoverTimer: ReturnType<typeof setTimeout> | null = null;
   private lastHoverPosition: monaco.IPosition | null = null;
+  private debouncedRun: DebouncedFunction<() => void>;
 
   constructor(config: MonacoEditorPanelConfig) {
     this.config = config;
@@ -53,6 +54,10 @@ export class MonacoEditorPanel {
       value: config.value,
       readOnly: config.readOnly,
     });
+
+    this.debouncedRun = debounce(() => {
+      this.config.onRun();
+    }, COMPILE_DEBOUNCE_MS);
 
     this.setupKeyboardShortcuts();
     this.setupHoverBehavior();
@@ -70,10 +75,8 @@ export class MonacoEditorPanel {
    * Dispose of the editor and all event listeners
    */
   public dispose(): void {
-    if (this.parameterControlDebounceTimer) {
-      clearTimeout(this.parameterControlDebounceTimer);
-      this.parameterControlDebounceTimer = null;
-    }
+    this.debouncedRun.cancel();
+
     if (this.hoverTimer) {
       clearTimeout(this.hoverTimer);
       this.hoverTimer = null;
@@ -118,21 +121,11 @@ export class MonacoEditorPanel {
           // showParameterControlAtCursor will automatically register with central registry
           showParameterControlAtCursor(this.editor, {
             onUpdate: (_value, newRange) => {
-              if (this.parameterControlDebounceTimer) {
-                clearTimeout(this.parameterControlDebounceTimer);
-              }
-              this.parameterControlDebounceTimer = setTimeout(() => {
-                this.config.onRun();
-                this.parameterControlDebounceTimer = null;
-              }, COMPILE_DEBOUNCE_MS);
+              this.debouncedRun();
               // Keep the number selected
               this.editor.setSelection(newRange);
             },
             onCommit: () => {
-              if (this.parameterControlDebounceTimer) {
-                clearTimeout(this.parameterControlDebounceTimer);
-                this.parameterControlDebounceTimer = null;
-              }
               this.config.onRun();
               // Keep editor focused
               this.editor.focus();
@@ -239,21 +232,11 @@ export class MonacoEditorPanel {
                 // showParameterControlAtCursor will automatically register with central registry
                 showParameterControlAtCursor(this.editor, {
                   onUpdate: (_value, newRange) => {
-                    if (this.parameterControlDebounceTimer) {
-                      clearTimeout(this.parameterControlDebounceTimer);
-                    }
-                    this.parameterControlDebounceTimer = setTimeout(() => {
-                      this.config.onRun();
-                      this.parameterControlDebounceTimer = null;
-                    }, COMPILE_DEBOUNCE_MS);
+                    this.debouncedRun();
                     // Keep the number selected
                     this.editor.setSelection(newRange);
                   },
                   onCommit: () => {
-                    if (this.parameterControlDebounceTimer) {
-                      clearTimeout(this.parameterControlDebounceTimer);
-                      this.parameterControlDebounceTimer = null;
-                    }
                     this.config.onRun();
                     // Keep editor focused
                     this.editor.focus();
