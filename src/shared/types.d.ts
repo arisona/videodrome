@@ -107,6 +107,7 @@ export interface ElectronAPI {
   onPatchesChanged: (callback: (patches: Array<PatchFile>) => void) => void;
   readPatch: (filePath: string) => Promise<string>;
   savePatch: (filePath: string, content: string) => Promise<boolean>;
+  patchExists: (filePath: string) => Promise<boolean>;
   renamePatch: (oldPath: string, newName: string) => Promise<string>;
   deletePatch: (filePath: string, isDirectory: boolean) => Promise<boolean>;
   createFolder: (parentPath: string, folderName: string) => Promise<string>;

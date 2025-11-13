@@ -109,6 +109,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readPatch: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_READ, filePath),
   savePatch: (filePath: string, content: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_SAVE, filePath, content),
+  patchExists: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_EXISTS, filePath),
   renamePatch: (oldPath: string, newName: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_RENAME, oldPath, newName),
   deletePatch: (filePath: string, isDirectory: boolean) =>

@@ -460,6 +460,15 @@ window.addEventListener('composer-save-as', ((event: CustomEvent) => {
     const filePath = `${targetDir}/${finalFilename}`;
 
     try {
+      // Check if file already exists
+      const exists = await window.electronAPI.patchExists(filePath);
+      if (exists) {
+        const confirmed = window.confirm('Patch exists.\n\nClick OK to overwrite.');
+        if (!confirmed) {
+          return;
+        }
+      }
+
       await window.electronAPI.savePatch(filePath, content);
 
       const state = getComposerState();
@@ -499,6 +508,15 @@ window.addEventListener('performer-save-as', ((event: CustomEvent) => {
     const filePath = `${targetDir}/${finalFilename}`;
 
     try {
+      // Check if file already exists
+      const exists = await window.electronAPI.patchExists(filePath);
+      if (exists) {
+        const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
+        if (!confirmed) {
+          return;
+        }
+      }
+
       await window.electronAPI.savePatch(filePath, content);
       triggerSlotSave(slotId, filePath, content);
       await loadPatches();

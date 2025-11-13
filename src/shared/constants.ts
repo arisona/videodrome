@@ -20,6 +20,7 @@ export const IPC_CHANNELS = {
   EDITOR_PATCHES_LIST: 'editor:patches-list',
   EDITOR_PATCH_READ: 'editor:patch-read',
   EDITOR_PATCH_SAVE: 'editor:patch-save',
+  EDITOR_PATCH_EXISTS: 'editor:patch-exists',
   EDITOR_PATCH_RENAME: 'editor:patch-rename',
   EDITOR_PATCH_DELETE: 'editor:patch-delete',
   EDITOR_FOLDER_CREATE: 'editor:folder-create',

@@ -545,7 +545,7 @@ class PatchExplorer extends ContentExplorerBase<PatchFile> {
           await this.loadItems();
         } catch (error) {
           console.error('Error renaming:', error);
-          alert(`Failed to rename: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          alert('Failed to rename.');
         }
       },
     );
@@ -574,9 +574,7 @@ class PatchExplorer extends ContentExplorerBase<PatchFile> {
       await this.loadItems();
     } catch (error) {
       console.error(`Error deleting ${itemType}:`, error);
-      alert(
-        `Failed to delete ${itemType}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      alert('Failed to delete item.');
     }
   }
 
@@ -595,9 +593,7 @@ class PatchExplorer extends ContentExplorerBase<PatchFile> {
         await this.loadItems();
       } catch (error) {
         console.error('Error creating folder:', error);
-        alert(
-          `Failed to create folder: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        alert('Failed to create folder.');
       }
     });
   }
@@ -625,9 +621,7 @@ osc(10, 0.1, 1)
         await this.loadItems();
       } catch (error) {
         console.error('Error creating patch:', error);
-        alert(
-          `Failed to create patch: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
+        alert('Failed to create patch.');
       }
     });
   }
@@ -673,9 +667,7 @@ osc(10, 0.1, 1)
 
         // Validate the name before saving
         if (!isValidName(value)) {
-          alert(
-            'Invalid name: File and folder names cannot contain path separators (/ or \\) or path traversal sequences (..).',
-          );
+          alert('Invalid file name.');
           return;
         }
 

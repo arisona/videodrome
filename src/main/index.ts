@@ -457,6 +457,22 @@ ipcMain.handle(IPC_CHANNELS.EDITOR_PATCH_SAVE, (_event, filePath: string, conten
   }
 });
 
+ipcMain.handle(IPC_CHANNELS.EDITOR_PATCH_EXISTS, (_event, filePath: string) => {
+  try {
+    const patchDir = path.resolve(patchDirectory);
+
+    // Validate filePath is within patch directory
+    if (!isPathWithinRoot(filePath, patchDir)) {
+      throw new Error('Access denied: Invalid file path');
+    }
+
+    return fs.existsSync(filePath);
+  } catch (error: unknown) {
+    console.error('Error checking patch existence:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle(IPC_CHANNELS.EDITOR_PATCH_RENAME, (_event, oldPath: string, newName: string) => {
   try {
     const patchDir = path.resolve(patchDirectory);
