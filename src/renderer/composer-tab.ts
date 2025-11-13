@@ -5,16 +5,14 @@ import * as monaco from 'monaco-editor';
 
 import { STATUS_MESSAGES } from '../shared/constants';
 
-import { MonacoEditorPanel } from './components/monaco-editor-panel';
+import { PatchPanel } from './components/patch-panel';
 import { getGlobalSources } from './editor';
 import {
   executeInHydraContext,
   cleanupHydraInstance,
   assignHydraSource,
 } from './hydra/hydra-execution';
-import { registerContextMenuActions } from './monaco-setup';
 import { requireElementById } from './utils/dom';
-import { PatchController } from './utils/patch-controller';
 
 import type { MediaType } from '../shared/types';
 import type { HydraSourceSlot } from 'hydra-synth';
@@ -23,46 +21,12 @@ const MARKER_OWNER = 'hydra-composer';
 
 // Composer tab state
 interface ComposerState {
-  editorPanel: MonacoEditorPanel;
-  editor: monaco.editor.IStandaloneCodeEditor;
-  patchController: PatchController;
-  statusElement: HTMLElement;
+  panel: PatchPanel;
   hydra: Hydra | null;
   isActive: boolean;
 }
 
 let composerState: ComposerState | null = null;
-
-function updateStatus(status: string, isError = false, tooltip?: string) {
-  if (!composerState) return;
-
-  composerState.statusElement.textContent = status;
-  composerState.statusElement.style.color = isError ? '#f48771' : '#858585';
-
-  if (tooltip) {
-    composerState.statusElement.setAttribute('title', tooltip);
-  } else {
-    composerState.statusElement.removeAttribute('title');
-  }
-}
-
-// Update file title display
-function updateFileTitle() {
-  const fileNameElement = document.getElementById('composer-file-name');
-  if (!fileNameElement || !composerState) return;
-
-  const fileName = composerState.patchController.getFileName();
-  const isDirty = composerState.patchController.isDirty();
-  const dirtyIndicator = isDirty ? ' •' : '';
-
-  if (fileName) {
-    fileNameElement.textContent = `${fileName}${dirtyIndicator}`;
-    fileNameElement.classList.remove('is-new-patch');
-  } else {
-    fileNameElement.textContent = `Untitled${dirtyIndicator}`;
-    fileNameElement.classList.add('is-new-patch');
-  }
-}
 
 // Initialize Hydra instance
 function initHydra() {
@@ -157,22 +121,27 @@ function executeHydraCode(code: string) {
     if (!hydraInstance) return;
   }
 
+  const monacoEditor = composerState.panel.getEditor();
+  const statusElement = requireElementById('composer-status') as HTMLSpanElement;
+
   try {
     executeInHydraContext(hydraInstance, code, true);
 
     // Clear Monaco markers on success
-    const model = composerState.editor.getModel();
+    const model = monacoEditor.getModel();
     if (model) {
       monaco.editor.setModelMarkers(model, MARKER_OWNER, []);
     }
 
-    updateStatus(STATUS_MESSAGES.READY);
+    statusElement.textContent = STATUS_MESSAGES.READY;
+    statusElement.style.color = '#858585';
+    statusElement.removeAttribute('title');
   } catch (error) {
     console.error('Error executing Hydra code:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Set Monaco markers for error
-    const model = composerState.editor.getModel();
+    const model = monacoEditor.getModel();
     if (model) {
       monaco.editor.setModelMarkers(model, MARKER_OWNER, [
         {
@@ -187,60 +156,20 @@ function executeHydraCode(code: string) {
     }
 
     // Update status with error and tooltip
-    updateStatus(STATUS_MESSAGES.ERROR, true, errorMessage);
+    statusElement.textContent = STATUS_MESSAGES.ERROR;
+    statusElement.style.color = '#f48771';
+    statusElement.setAttribute('title', errorMessage);
   }
 }
 
-// Run patch
 function runPatch() {
   if (!composerState) return;
-  const code = composerState.editor.getValue();
-  updateStatus(STATUS_MESSAGES.RUNNING);
+  const code = composerState.panel.getEditor().getValue();
   executeHydraCode(code);
-}
-
-// Run patch (exported for external use)
-export function runComposer() {
-  runPatch();
-}
-
-// Save functionality
-export async function saveComposer() {
-  if (!composerState) return;
-  const saved = await composerState.patchController.save();
-  if (!saved) {
-    saveComposerAs();
-  }
-}
-
-export function saveComposerAs() {
-  composerState?.patchController.triggerSaveAs('composer-save-as');
-}
-
-// Revert functionality
-export async function revertComposer() {
-  await composerState?.patchController.revert();
-}
-
-// Load patch into composer
-export async function loadPatchIntoComposer(patchPath: string, patchName: string) {
-  await composerState?.patchController.load({
-    source: 'disk',
-    filePath: patchPath,
-    fileName: patchName,
-  });
-}
-
-// Create new patch in composer
-export function newComposerPatch() {
-  void composerState?.patchController.clearFile();
 }
 
 // Initialize composer tab
 export function initComposer() {
-  const editorContainer = requireElementById('editor-composer-monaco');
-  const statusElement = requireElementById('composer-status') as HTMLSpanElement;
-
   const initialValue = `// I'm sorry Dave, I'm afraid I can't do that.
 solid(0, 0, 0)
   .add(
@@ -274,122 +203,66 @@ solid(0, 0, 0)
   .out()
 `;
 
-  const editorPanel = new MonacoEditorPanel({
-    container: editorContainer,
-    value: initialValue,
+  const panel = new PatchPanel({
+    editorContainer: requireElementById('editor-composer-monaco'),
+    statusElement: requireElementById('composer-status'),
+    fileNameElement: requireElementById('composer-file-name'),
+    buttons: {
+      run: document.getElementById('composer-run-btn'),
+      new: document.getElementById('composer-new-btn'),
+      save: document.getElementById('composer-save-btn'),
+      saveAs: document.getElementById('composer-save-as-btn'),
+      revert: document.getElementById('composer-revert-btn'),
+    },
+    initialValue,
     readOnly: false,
     onRun: runPatch,
-    onSave: () => {
-      void saveComposer();
-    },
-    onSaveAs: () => {
-      saveComposerAs();
-    },
-    onRevert: () => {
-      void revertComposer();
-    },
-  });
-
-  const editor = editorPanel.getEditor();
-
-  // Initialize file controller first
-  const patchController = new PatchController(editor, {
-    onStatusUpdate: (msg, isError) => {
-      updateStatus(msg, isError);
-    },
-    onDirtyChange: () => {
-      updateFileTitle();
-    },
-    onFileChange: () => {
-      updateFileTitle();
-    },
-    onBeforeLoad: (_currentState) => {
-      const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
-      return confirmed ? 'discard' : 'cancel';
-    },
-    onAfterLoad: () => {
-      runPatch();
-    },
-    onAfterRevert: () => {
-      runPatch();
-    },
+    contextMenuActions: [
+      {
+        id: 'composer-open-in-performer-a',
+        label: 'Open in Performer Editor A',
+        run: () => {
+          if (!composerState) return;
+          const content = composerState.panel.getEditor().getValue();
+          const filePath = composerState.panel.getFilePath();
+          const fileName = composerState.panel.getFileName();
+          const isDirty = composerState.panel.isDirty();
+          const originalContent = composerState.panel.getOriginalContent();
+          window.dispatchEvent(
+            new CustomEvent('composer-open-in-performer', {
+              detail: { content, target: 'A', filePath, fileName, isDirty, originalContent },
+            }),
+          );
+        },
+      },
+      {
+        id: 'composer-open-in-performer-b',
+        label: 'Open in Performer Editor B',
+        run: () => {
+          if (!composerState) return;
+          const content = composerState.panel.getEditor().getValue();
+          const filePath = composerState.panel.getFilePath();
+          const fileName = composerState.panel.getFileName();
+          const isDirty = composerState.panel.isDirty();
+          const originalContent = composerState.panel.getOriginalContent();
+          window.dispatchEvent(
+            new CustomEvent('composer-open-in-performer', {
+              detail: { content, target: 'B', filePath, fileName, isDirty, originalContent },
+            }),
+          );
+        },
+      },
+    ],
+    saveAsEventName: 'composer-save-as',
   });
 
   const state: ComposerState = {
-    editorPanel,
-    editor,
-    patchController: patchController,
-    statusElement,
+    panel,
     hydra: null,
     isActive: false,
   };
 
   composerState = state;
-
-  // Register context menu actions
-  registerContextMenuActions(editor, [
-    {
-      id: 'composer-open-in-performer-a',
-      label: 'Open in Performer Slot A',
-      run: () => {
-        if (!composerState) return;
-        const content = composerState.editor.getValue();
-        const filePath = composerState.patchController.getFilePath();
-        const fileName = composerState.patchController.getFileName();
-        const isDirty = composerState.patchController.isDirty();
-        const originalContent = composerState.patchController.getOriginalContent();
-        window.dispatchEvent(
-          new CustomEvent('composer-open-in-performer', {
-            detail: { content, target: 'A', filePath, fileName, isDirty, originalContent },
-          }),
-        );
-      },
-    },
-    {
-      id: 'composer-open-in-performer-b',
-      label: 'Open in Performer Slot B',
-      run: () => {
-        if (!composerState) return;
-        const content = composerState.editor.getValue();
-        const filePath = composerState.patchController.getFilePath();
-        const fileName = composerState.patchController.getFileName();
-        const isDirty = composerState.patchController.isDirty();
-        const originalContent = composerState.patchController.getOriginalContent();
-        window.dispatchEvent(
-          new CustomEvent('composer-open-in-performer', {
-            detail: { content, target: 'B', filePath, fileName, isDirty, originalContent },
-          }),
-        );
-      },
-    },
-  ]);
-
-  // Button handlers
-  document.getElementById('composer-run-btn')?.addEventListener('click', runPatch);
-  document.getElementById('composer-new-btn')?.addEventListener('click', () => {
-    newComposerPatch();
-  });
-  document.getElementById('composer-save-btn')?.addEventListener('click', () => {
-    void saveComposer();
-  });
-  document.getElementById('composer-save-as-btn')?.addEventListener('click', () => {
-    saveComposerAs();
-  });
-  document.getElementById('composer-revert-btn')?.addEventListener('click', () => {
-    void revertComposer();
-  });
-
-  // File name click handler - reveal file in explorer
-  document.getElementById('composer-file-name')?.addEventListener('click', () => {
-    const filePath = composerState?.patchController.getFilePath();
-    if (filePath) {
-      window.dispatchEvent(
-        new CustomEvent('reveal-file-in-explorer', {
-          detail: { filePath },
-        }),
-      );
-    }
-  });
 
   // Handle window resize
   window.addEventListener('resize', () => {

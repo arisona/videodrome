@@ -415,7 +415,7 @@ class PatchExplorer extends ContentExplorerBase<PatchFile> {
           },
         },
         {
-          label: 'Open in Performer Slot A',
+          label: 'Open in Performer Editor A',
           action: () => {
             window.dispatchEvent(
               new CustomEvent('patch-explorer-open-patch', {
@@ -425,7 +425,7 @@ class PatchExplorer extends ContentExplorerBase<PatchFile> {
           },
         },
         {
-          label: 'Open in Performer Slot B',
+          label: 'Open in Performer Editor B',
           action: () => {
             window.dispatchEvent(
               new CustomEvent('patch-explorer-open-patch', {

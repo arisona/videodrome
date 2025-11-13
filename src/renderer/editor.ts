@@ -14,11 +14,8 @@ import {
   initComposer,
   showComposer,
   hideComposer,
-  loadPatchIntoComposer,
   getComposerState,
   setSource as setSourceInComposer,
-  saveComposer,
-  newComposerPatch,
 } from './composer-tab';
 import {
   registerHydraCompletionProvider,
@@ -31,17 +28,7 @@ import {
   registerHydraLanguage,
   defineVideodromeTheme,
 } from './monaco-setup';
-import {
-  initPerformer,
-  showPerformer,
-  hidePerformer,
-  loadPatchIntoSlot,
-  getPerformerState,
-  triggerSlotSave,
-  saveSlotA,
-  saveSlotB,
-  newSlotPatch,
-} from './performer-tab';
+import { initPerformer, showPerformer, hidePerformer, getPerformerState } from './performer-tab';
 import { initSettingsService, getSettings } from './settings-service';
 import { initSettings, showSettings, hideSettings } from './settings-tab';
 import {
@@ -248,38 +235,6 @@ void window.electronAPI.getOutputWindowState().then((isOpen: boolean) => {
   updateOutputWindowButton(isOpen);
 });
 
-// Setup drop zone for composer editor
-function setupComposerDropZone() {
-  const editorElement = document.getElementById('editor-composer-monaco');
-  if (!editorElement) return;
-
-  editorElement.addEventListener('dragover', (event) => {
-    if (!event.dataTransfer || currentMainTab !== 'compose') return;
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-    editorElement.style.opacity = '0.7';
-  });
-
-  editorElement.addEventListener('dragleave', () => {
-    editorElement.style.opacity = '1';
-  });
-
-  editorElement.addEventListener('drop', (event) => {
-    if (!event.dataTransfer || currentMainTab !== 'compose') return;
-
-    event.preventDefault();
-    editorElement.style.opacity = '1';
-
-    const patchPath = event.dataTransfer.getData('patch-path');
-    const patchName = event.dataTransfer.getData('patch-name');
-
-    if (!patchPath) return;
-
-    void loadPatchIntoComposer(patchPath, patchName);
-  });
-}
-
 // Handle patch explorer events
 window.addEventListener('patch-explorer-open-patch', ((event: CustomEvent) => {
   const { patchPath, patchName, target } = event.detail as {
@@ -289,21 +244,27 @@ window.addEventListener('patch-explorer-open-patch', ((event: CustomEvent) => {
   };
 
   if (target === 'composer') {
-    if (currentMainTab !== 'compose') {
-      showMainTab('compose');
-    }
-    void loadPatchIntoComposer(patchPath, patchName);
+    showMainTab('compose');
+    void getComposerState()?.panel.load({
+      source: 'disk',
+      filePath: patchPath,
+      fileName: patchName,
+    });
   } else if (target === 'performer-a') {
-    if (currentMainTab !== 'perform') {
-      showMainTab('perform');
-    }
-    void loadPatchIntoSlot(patchPath, patchName, 'A');
+    showMainTab('perform');
+    void getPerformerState().panelA?.load({
+      source: 'disk',
+      filePath: patchPath,
+      fileName: patchName,
+    });
   } else {
     // if (target === 'performer-b')
-    if (currentMainTab !== 'perform') {
-      showMainTab('perform');
-    }
-    void loadPatchIntoSlot(patchPath, patchName, 'B');
+    showMainTab('perform');
+    void getPerformerState().panelB?.load({
+      source: 'disk',
+      filePath: patchPath,
+      fileName: patchName,
+    });
   }
 }) as EventListener);
 
@@ -334,13 +295,13 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
     showMainTab('perform');
   }
 
-  const slot = target === 'A' ? getPerformerState().slotA : getPerformerState().slotB;
+  const panel = target === 'A' ? getPerformerState().panelA : getPerformerState().panelB;
 
-  if (slot) {
+  if (panel) {
     // Load content using unified load method
     if (filePath && _fileName) {
       // Load with file relationship
-      void slot.patchController.load({
+      void panel.load({
         source: 'memory',
         filePath,
         fileName: _fileName,
@@ -349,7 +310,7 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
       });
     } else {
       // Load as new patch without file relationship
-      void slot.patchController.load({
+      void panel.load({
         source: 'new',
         content,
       });
@@ -383,7 +344,7 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
     // Load content using unified load method
     if (filePath && _fileName) {
       // Load with file relationship
-      void composerState.patchController.load({
+      void composerState.panel.load({
         source: 'memory',
         filePath,
         fileName: _fileName,
@@ -392,7 +353,7 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
       });
     } else {
       // Load as new patch without file relationship
-      void composerState.patchController.load({
+      void composerState.panel.load({
         source: 'new',
         content,
       });
@@ -408,15 +369,15 @@ function createNewPatch(): void {
   if (currentMainTab === 'compose') {
     const state = getComposerState();
     if (state) {
-      content = state.editor.getValue();
-      loadedFile = state.patchController.getFilePath();
+      content = state.panel.getEditor().getValue();
+      loadedFile = state.panel.getFilePath();
     }
   } else {
-    // In perform tab, try to get content from focused slot or default to slot A
+    // In perform tab, try to get content from focused panel or default to panel A
     const performerState = getPerformerState();
-    if (performerState.slotA) {
-      content = performerState.slotA.editor.getValue();
-      loadedFile = performerState.slotA.patchController.getFilePath();
+    if (performerState.panelA) {
+      content = performerState.panelA.getEditor().getValue();
+      loadedFile = performerState.panelA.getFilePath();
     }
   }
 
@@ -472,10 +433,7 @@ window.addEventListener('composer-save-as', ((event: CustomEvent) => {
       await window.electronAPI.savePatch(filePath, content);
 
       const state = getComposerState();
-      if (state) {
-        state.patchController.onSaveAsComplete(filePath, content);
-      }
-
+      state?.panel.onSaveAsComplete(filePath, content);
       await loadPatches();
       // Reveal the saved file in the patch explorer
       window.dispatchEvent(
@@ -490,8 +448,8 @@ window.addEventListener('composer-save-as', ((event: CustomEvent) => {
 }) as EventListener);
 
 window.addEventListener('performer-save-as', ((event: CustomEvent) => {
-  const { slotId, initialValue, content, currentFilePath, rootPatchDir } = event.detail as {
-    slotId: 'A' | 'B';
+  const { panelId, initialValue, content, currentFilePath, rootPatchDir } = event.detail as {
+    panelId: 'A' | 'B';
     initialValue: string;
     content: string;
     currentFilePath: string | null;
@@ -518,7 +476,8 @@ window.addEventListener('performer-save-as', ((event: CustomEvent) => {
       }
 
       await window.electronAPI.savePatch(filePath, content);
-      triggerSlotSave(slotId, filePath, content);
+      const panel = panelId === 'A' ? getPerformerState().panelA : getPerformerState().panelB;
+      panel?.onSaveAsComplete(filePath, content);
       await loadPatches();
       // Reveal the saved file in the patch explorer
       window.dispatchEvent(
@@ -565,20 +524,20 @@ function setupSidebarResizing() {
   });
 }
 
-// Check if there are unsaved changes in any editor
+// Check if there are unsaved changes in any panel
 function checkUnsavedChanges(): boolean {
   const composer = getComposerState();
   const performer = getPerformerState();
 
-  if (composer?.patchController.isDirty()) {
+  if (composer?.panel.isDirty()) {
     return true;
   }
 
-  if (performer.slotA?.patchController.isDirty()) {
+  if (performer.panelA?.isDirty()) {
     return true;
   }
 
-  if (performer.slotB?.patchController.isDirty()) {
+  if (performer.panelB?.isDirty()) {
     return true;
   }
 
@@ -591,26 +550,18 @@ async function saveAllBeforeQuit(): Promise<void> {
   const performer = getPerformerState();
 
   // Save composer if dirty and has a file loaded
-  if (composer && composer.patchController.isDirty() && composer.patchController.getFilePath()) {
-    await saveComposer();
+  if (composer && composer.panel.isDirty() && composer.panel.getFilePath()) {
+    await composer.panel.save();
   }
 
-  // Save performer slot A if dirty and has a file loaded
-  if (
-    performer.slotA &&
-    performer.slotA.patchController.isDirty() &&
-    performer.slotA.patchController.getFilePath()
-  ) {
-    await saveSlotA();
+  // Save performer panel A if dirty and has a file loaded
+  if (performer.panelA && performer.panelA.isDirty() && performer.panelA.getFilePath()) {
+    await performer.panelA.save();
   }
 
-  // Save performer slot B if dirty and has a file loaded
-  if (
-    performer.slotB &&
-    performer.slotB.patchController.isDirty() &&
-    performer.slotB.patchController.getFilePath()
-  ) {
-    await saveSlotB();
+  // Save performer panel B if dirty and has a file loaded
+  if (performer.panelB && performer.panelB.isDirty() && performer.panelB.getFilePath()) {
+    await performer.panelB.save();
   }
 }
 
@@ -638,51 +589,51 @@ function setupGlobalKeyboardShortcuts() {
     if (event.key === 'n' || event.key === 'N') {
       event.preventDefault();
       if (currentMainTab === 'compose') {
-        newComposerPatch();
+        void getComposerState()?.panel.newPatch();
       } else if (currentMainTab === 'perform') {
-        // Determine which slot has focus
+        // Determine which panel has focus
         const performerState = getPerformerState();
         const activeElement = document.activeElement;
 
-        if (activeElement && performerState.slotB?.editor.hasTextFocus()) {
-          newSlotPatch('B');
-        } else if (performerState.slotA) {
-          // Default to slot A if neither has focus or slot A has focus
-          newSlotPatch('A');
+        if (activeElement && performerState.panelB?.getEditor().hasTextFocus()) {
+          void performerState.panelB.newPatch();
+        } else if (performerState.panelA) {
+          // Default to panel A if neither has focus or panel A has focus
+          void performerState.panelA.newPatch();
         }
       }
       return;
     }
 
-    // Cmd+1 - Switch to Composer tab and focus editor
+    // Cmd+1 - Switch to Composer tab and focus panel
     if (event.key === '1') {
       event.preventDefault();
       showMainTab('compose');
       const state = getComposerState();
       if (state) {
-        state.editor.focus();
+        state.panel.getEditor().focus();
       }
       return;
     }
 
-    // Cmd+2 - Switch to Performer tab and focus slot A editor
+    // Cmd+2 - Switch to Performer tab and focus panel A
     if (event.key === '2') {
       event.preventDefault();
       showMainTab('perform');
       const performerState = getPerformerState();
-      if (performerState.slotA) {
-        performerState.slotA.editor.focus();
+      if (performerState.panelA) {
+        performerState.panelA.getEditor().focus();
       }
       return;
     }
 
-    // Cmd+3 - Switch to Performer tab and focus slot B editor
+    // Cmd+3 - Switch to Performer tab and focus panel B
     if (event.key === '3') {
       event.preventDefault();
       showMainTab('perform');
       const performerState = getPerformerState();
-      if (performerState.slotB) {
-        performerState.slotB.editor.focus();
+      if (performerState.panelB) {
+        performerState.panelB.getEditor().focus();
       }
       return;
     }
@@ -713,12 +664,8 @@ void (async () => {
 
   // Initialize patch explorer with callbacks
   initPatchExplorer({
-    onPatchDoubleClick: (patchPath, patchName) => {
-      if (currentMainTab === 'compose') {
-        void loadPatchIntoComposer(patchPath, patchName);
-      } else {
-        void loadPatchIntoSlot(patchPath, patchName, 'A');
-      }
+    onPatchDoubleClick: (_patchPath, _patchName) => {
+      // Double click callback (currently unused, but available for future use)
     },
     onPatchDragStart: (_patchPath, _patchName) => {
       // Drag start callback (currently unused, but available for future use)
@@ -741,9 +688,6 @@ void (async () => {
       window.electronAPI.setHydraSource(sourceSlot, mediaUrl, mediaType);
     },
   });
-
-  // Setup drop zones
-  setupComposerDropZone();
 
   // Setup sidebar resizing
   setupSidebarResizing();

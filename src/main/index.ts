@@ -11,7 +11,7 @@ import { scanDirectory } from './utils/file-scanning';
 import { collectMediaFiles } from './utils/media';
 import { isPathWithinRoot, isValidName, safeJoin } from './utils/path-security';
 
-import type { ExecutionResultsPayload, Settings } from '../shared/types';
+import type { ResultsPayload, Settings } from '../shared/types';
 
 const EDITOR_WINDOW_WIDTH = 1200;
 const EDITOR_WINDOW_HEIGHT = 800;
@@ -290,8 +290,7 @@ ipcMain.on(IPC_CHANNELS.EDITOR_CODE_RUN, (_event, code: string) => {
   outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_CODE_RUN, code);
 });
 
-ipcMain.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results: ExecutionResultsPayload) => {
-  editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
+ipcMain.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results: ResultsPayload) => {
   editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
 });
 

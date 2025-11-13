@@ -310,7 +310,7 @@
       }
 
       /* Performer tab */
-      #editor-performer-slots-container {
+      #editor-performer-panels-container {
         flex: 1;
         min-height: 0;
         display: flex;
@@ -318,18 +318,18 @@
         max-height: 100%;
       }
 
-      .editor-performer-slot {
+      .editor-performer-panel {
         flex: 1;
         display: flex;
         flex-direction: column;
         min-width: 0;
       }
 
-      .editor-performer-slot:first-child {
+      .editor-performer-panel:first-child {
         border-right: 1px solid var(--border-color);
       }
 
-      .editor-performer-slot-body {
+      .editor-performer-panel-body {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -837,13 +837,13 @@
 
             <!-- Performer tab -->
             <div id="performer-tab" class="main-view">
-              <div id="editor-performer-slots-container">
+              <div id="editor-performer-panels-container">
                 <!-- Slot A -->
-                <div class="editor-performer-slot" id="slot-a">
+                <div class="editor-performer-panel" id="panel-a">
                   <div class="editor-header">
                     <div class="editor-title">
-                      <span class="editor-file-name" id="slot-a-file-name">A: Untitled</span>
-                      <span class="editor-status" id="slot-a-status">Ready</span>
+                      <span class="editor-file-name" id="panel-a-file-name">A: Untitled</span>
+                      <span class="editor-status" id="panel-a-status">Ready</span>
                     </div>
                     <div class="editor-actions">
                       <button
@@ -888,7 +888,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="editor-performer-slot-body">
+                  <div class="editor-performer-panel-body">
                     <div class="editor-monaco-container" id="editor-a"></div>
                     <div class="editor-performer-preview-container">
                       <canvas
@@ -902,11 +902,11 @@
                 </div>
 
                 <!-- Slot B -->
-                <div class="editor-performer-slot" id="slot-b">
+                <div class="editor-performer-panel" id="panel-b">
                   <div class="editor-header">
                     <div class="editor-title">
-                      <span class="editor-file-name" id="slot-b-file-name">B: Untitled</span>
-                      <span class="editor-status" id="slot-b-status">Ready</span>
+                      <span class="editor-file-name" id="panel-b-file-name">B: Untitled</span>
+                      <span class="editor-status" id="panel-b-status">Ready</span>
                     </div>
                     <div class="editor-actions">
                       <button
@@ -951,7 +951,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="editor-performer-slot-body">
+                  <div class="editor-performer-panel-body">
                     <div class="editor-monaco-container" id="editor-b"></div>
                     <div class="editor-performer-preview-container">
                       <canvas

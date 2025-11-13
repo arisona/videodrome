@@ -6,12 +6,7 @@ import { getCompositeFunction } from '../shared/composite-functions';
 
 import { executeInHydraContext, assignHydraSource } from './hydra/hydra-execution';
 
-import type {
-  EditorPayload,
-  ExecutionResultsPayload,
-  MediaType,
-  PreviewFrame,
-} from '../shared/types';
+import type { ExecutionPayload, ResultsPayload, MediaType, PreviewFrame } from '../shared/types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
 // Define frame size and fps of stream sent to editor for preview (fixed 16:9)
@@ -24,7 +19,7 @@ const OUTPUT_PREVIEW = {
 // Get DOM elements
 const outputCanvas = document.getElementById('output-canvas') as HTMLCanvasElement;
 
-// Create hidden canvases for slot A and B
+// Create hidden canvases for patch a and b
 const canvasA = document.createElement('canvas');
 const previewCanvasA = document.createElement('canvas');
 previewCanvasA.width = OUTPUT_PREVIEW.PREVIEW_WIDTH;
@@ -41,7 +36,7 @@ let previewStreamActive = false;
 let lastPreviewTime = 0;
 let previewCaptureInFlight = false;
 
-// Hydra running code from slot a
+// Hydra running code from patch a
 const hydraA = new Hydra({
   canvas: canvasA,
   detectAudio: false,
@@ -49,7 +44,7 @@ const hydraA = new Hydra({
   makeGlobal: true,
 });
 
-// Hydra running code from slot b
+// Hydra running code from patch b
 const hydraB = new Hydra({
   canvas: canvasB,
   detectAudio: false,
@@ -101,13 +96,13 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-function isEditorPayload(value: unknown): value is EditorPayload {
+function isExecutionPayload(value: unknown): value is ExecutionPayload {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
 
   const candidate = value as Record<string, unknown>;
-  return typeof candidate.slotA === 'string' && typeof candidate.slotB === 'string';
+  return typeof candidate.patchA === 'string' && typeof candidate.patchB === 'string';
 }
 
 function extractLineNumber(error: unknown): number | undefined {
@@ -268,30 +263,30 @@ function previewLoop(timestamp: number) {
   }
 }
 
-// Execute dual-slot composition with 3 Hydra instances
+// Execute two patches and composition with 3 Hydra instances
 function executeHydraCode(
-  slotA: string,
-  slotB: string,
+  patchA: string,
+  patchB: string,
   compositeMode: string,
   compositeParams: Record<string, number>,
 ) {
-  const results: ExecutionResultsPayload = {
-    slotA: { success: true },
-    slotB: { success: true },
+  const results: ResultsPayload = {
+    resultA: { success: true },
+    resultB: { success: true },
   };
 
   try {
-    executeInHydraContext(hydraA, slotA, true);
+    executeInHydraContext(hydraA, patchA, true);
   } catch (error) {
-    console.error('Error executing slot A:', error);
-    results.slotA = { success: false, error: serializeError(error) };
+    console.error('Error executing patch A:', error);
+    results.resultA = { success: false, error: serializeError(error) };
   }
 
   try {
-    executeInHydraContext(hydraB, slotB, true);
+    executeInHydraContext(hydraB, patchB, true);
   } catch (error) {
-    console.error('Error executing slot B:', error);
-    results.slotB = { success: false, error: serializeError(error) };
+    console.error('Error executing patch B:', error);
+    results.resultB = { success: false, error: serializeError(error) };
   }
 
   requestAnimationFrame(() => {
@@ -340,11 +335,11 @@ function executeHydraCode(
     } catch (error) {
       console.error('Error executing code:', error);
       const serializedError = serializeError(error);
-      if (results.slotA.success) {
-        results.slotA = { success: false, error: serializedError };
+      if (results.resultA.success) {
+        results.resultA = { success: false, error: serializedError };
       }
-      if (results.slotB.success) {
-        results.slotB = { success: false, error: serializedError };
+      if (results.resultB.success) {
+        results.resultB = { success: false, error: serializedError };
       }
     } finally {
       window.electronAPI.sendExecutionResults(results);
@@ -379,11 +374,11 @@ window.electronAPI.onRunCode((data: string) => {
   try {
     const parsed: unknown = JSON.parse(data);
 
-    if (isEditorPayload(parsed)) {
-      const payload: EditorPayload = parsed;
+    if (isExecutionPayload(parsed)) {
+      const payload: ExecutionPayload = parsed;
       executeHydraCode(
-        payload.slotA,
-        payload.slotB,
+        payload.patchA,
+        payload.patchB,
         payload.compositeMode ?? 'add',
         payload.compositeParams ?? {},
       );

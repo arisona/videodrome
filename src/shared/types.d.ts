@@ -34,13 +34,22 @@ export interface MediaFile {
   mtime?: number; // File modification time (for cache invalidation)
 }
 
+// Patches and composition sent from editor to output window
+export interface ExecutionPayload {
+  patchA: string;
+  patchB: string;
+  compositeMode?: string;
+  compositeParams?: Record<string, number>;
+}
+
+// Preview frame sent from output window to editor for preview frames
 export interface PreviewFrame {
   width: number;
   height: number;
   data: ArrayBuffer;
 }
 
-export interface SlotExecutionResult {
+export interface PatchExecutionResult {
   success: boolean;
   error?: {
     message: string;
@@ -49,16 +58,10 @@ export interface SlotExecutionResult {
   };
 }
 
-export interface ExecutionResultsPayload {
-  slotA: SlotExecutionResult;
-  slotB: SlotExecutionResult;
-}
-
-export interface EditorPayload {
-  slotA: string;
-  slotB: string;
-  compositeMode?: string;
-  compositeParams?: Record<string, number>;
+// Execution results sent from output window to editor
+export interface ResultsPayload {
+  resultA: PatchExecutionResult;
+  resultB: PatchExecutionResult;
 }
 
 export type CompositeParameterType = 'range' | 'toggle';
@@ -117,8 +120,8 @@ export interface ElectronAPI {
   ) => () => void;
   onPreviewPortReady: (callback: () => void) => void;
   isPreviewPortReady: () => boolean;
-  sendExecutionResults: (results: ExecutionResultsPayload) => void;
-  onExecutionResults: (callback: (results: ExecutionResultsPayload) => void) => void;
+  sendExecutionResults: (results: ResultsPayload) => void;
+  onExecutionResults: (callback: (results: ResultsPayload) => void) => void;
   setHydraSource: (
     sourceSlot: HydraSourceSlot,
     mediaUrl: string,

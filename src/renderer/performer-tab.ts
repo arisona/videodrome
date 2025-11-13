@@ -10,102 +10,71 @@ import { STATUS_MESSAGES } from '../shared/constants';
 import { debounce, type DebouncedFunction } from '../shared/debounce';
 
 import { showDocumentationModal } from './components/modal';
-import { MonacoEditorPanel } from './components/monaco-editor-panel';
 import {
   StandaloneParameterControl,
   registerParameterControl,
   disposeActiveParameterControl,
   HOVER_DELAY_MS,
 } from './components/parameter-control';
-import { registerContextMenuActions } from './monaco-setup';
+import { PatchPanel } from './components/patch-panel';
 import { getSettings } from './settings-service';
 import { requireElementById } from './utils/dom';
-import { PatchController } from './utils/patch-controller';
 
-import type { ExecutionResultsPayload, PreviewFrame, SlotExecutionResult } from '../shared/types';
+import type {
+  ExecutionPayload,
+  ResultsPayload,
+  PreviewFrame,
+  PatchExecutionResult,
+} from '../shared/types';
 
 const MARKER_OWNER = 'hydra-performer';
 const MODAL_HOVER_DELAY_MS = 1000;
 
-// Slot state interface
-interface SlotState {
-  editorPanel: MonacoEditorPanel;
-  editor: monaco.editor.IStandaloneCodeEditor;
-  patchController: PatchController;
-  statusElement: HTMLElement;
-  previewCanvas: HTMLCanvasElement;
-  previewContext: CanvasRenderingContext2D | null;
-}
-
 let performerState: {
-  slotA: SlotState | null;
-  slotB: SlotState | null;
+  panelA: PatchPanel | null;
+  panelB: PatchPanel | null;
   compositeMode: string;
-  compositeParams: Record<string, number>; // All params including levelA, levelB, master
+  compositeParams: Record<string, number>;
   isActive: boolean;
   previewFramesDisposable: (() => void) | null;
+  previewCanvasA: HTMLCanvasElement | null;
+  previewCanvasB: HTMLCanvasElement | null;
+  previewContextA: CanvasRenderingContext2D | null;
+  previewContextB: CanvasRenderingContext2D | null;
 } = {
-  slotA: null,
-  slotB: null,
+  panelA: null,
+  panelB: null,
   compositeMode: 'add',
   compositeParams: {},
   isActive: false,
   previewFramesDisposable: null,
+  previewCanvasA: null,
+  previewCanvasB: null,
+  previewContextA: null,
+  previewContextB: null,
 };
 
-// Update slot status
-function updateSlotStatus(slot: SlotState, status: string, isError = false, tooltip?: string) {
-  slot.statusElement.textContent = status;
-  slot.statusElement.style.color = isError ? '#f48771' : '#858585';
+function swapPerformerPatches(): void {
+  if (!performerState.panelA || !performerState.panelB) return;
 
-  if (tooltip) {
-    slot.statusElement.setAttribute('title', tooltip);
-  } else {
-    slot.statusElement.removeAttribute('title');
-  }
-}
-
-// Update file title display
-function updateFileTitle(slot: SlotState, slotId: 'A' | 'B') {
-  const elementId = slotId === 'A' ? 'slot-a-file-name' : 'slot-b-file-name';
-  const fileNameElement = document.getElementById(elementId);
-  if (!fileNameElement) return;
-
-  const fileName = slot.patchController.getFileName();
-  const isDirty = slot.patchController.isDirty();
-  const dirtyIndicator = isDirty ? ' •' : '';
-
-  if (fileName) {
-    fileNameElement.textContent = `${slotId}: ${fileName}${dirtyIndicator}`;
-    fileNameElement.classList.remove('is-new-patch');
-  } else {
-    fileNameElement.textContent = `${slotId}: Untitled${dirtyIndicator}`;
-    fileNameElement.classList.add('is-new-patch');
-  }
-}
-
-// Swap the contents of performer slots A and B
-function swapPerformerSlots(): void {
-  if (!performerState.slotA || !performerState.slotB) return;
-
-  // Capture current state of both slots
+  // Capture current state of both panels
   const stateA = {
-    content: performerState.slotA.editor.getValue(),
-    filePath: performerState.slotA.patchController.getFilePath(),
-    fileName: performerState.slotA.patchController.getFileName(),
-    originalContent: performerState.slotA.patchController.getOriginalContent(),
+    content: performerState.panelA.getEditor().getValue(),
+    filePath: performerState.panelA.getFilePath(),
+    fileName: performerState.panelA.getFileName(),
+    originalContent: performerState.panelA.getOriginalContent(),
   };
 
   const stateB = {
-    content: performerState.slotB.editor.getValue(),
-    filePath: performerState.slotB.patchController.getFilePath(),
-    fileName: performerState.slotB.patchController.getFileName(),
-    originalContent: performerState.slotB.patchController.getOriginalContent(),
+    content: performerState.panelB.getEditor().getValue(),
+    filePath: performerState.panelB.getFilePath(),
+    fileName: performerState.panelB.getFileName(),
+    originalContent: performerState.panelB.getOriginalContent(),
   };
 
   // Swap using file controller methods (which will trigger onAfterLoad and run the patches)
   if (stateB.filePath && stateB.fileName) {
-    void performerState.slotA.patchController.load({
+    void performerState.panelA.load({
       source: 'memory',
       filePath: stateB.filePath,
       fileName: stateB.fileName,
@@ -114,14 +83,14 @@ function swapPerformerSlots(): void {
     });
   } else {
     // No file path - load as new patch with the content
-    void performerState.slotA.patchController.load({
+    void performerState.panelA.load({
       source: 'new',
       content: stateB.content,
     });
   }
 
   if (stateA.filePath && stateA.fileName) {
-    void performerState.slotB.patchController.load({
+    void performerState.panelB.load({
       source: 'memory',
       filePath: stateA.filePath,
       fileName: stateA.fileName,
@@ -130,48 +99,52 @@ function swapPerformerSlots(): void {
     });
   } else {
     // No file path - load as new patch with the content
-    void performerState.slotB.patchController.load({
+    void performerState.panelB.load({
       source: 'new',
       content: stateA.content,
     });
   }
 }
 
-function prepareSlotExecution(slot: SlotState) {
-  const model = slot.editor.getModel();
+function updateStatus(panelId: 'A' | 'B', status: string, isError = false, tooltip?: string) {
+  const elementId = panelId === 'A' ? 'panel-a-status' : 'panel-b-status';
+  const statusElement = document.getElementById(elementId);
+  if (!statusElement) return;
+
+  statusElement.textContent = status;
+  statusElement.style.color = isError ? '#f48771' : '#858585';
+
+  if (tooltip) {
+    statusElement.setAttribute('title', tooltip);
+  } else {
+    statusElement.removeAttribute('title');
+  }
+}
+
+function runPatch(panelId: 'A' | 'B') {
+  const panel = panelId === 'A' ? performerState.panelA : performerState.panelB;
+  if (!panel) return;
+
+  const model = panel.getEditor().getModel();
   if (model) {
     monaco.editor.setModelMarkers(model, MARKER_OWNER, []);
   }
-  updateSlotStatus(slot, STATUS_MESSAGES.RUNNING);
-}
-
-function runSlot(slot: SlotState) {
-  prepareSlotExecution(slot);
+  updateStatus(panelId, STATUS_MESSAGES.RUNNING);
   sendToOutputWindow();
 }
 
-// Run slot (exported for external use)
-export function runPerformerSlot(slotId: 'A' | 'B') {
-  const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
-  if (slot) {
-    runSlot(slot);
-  }
-}
-
 function sendToOutputWindow() {
-  if (!performerState.slotA || !performerState.slotB) return;
+  if (!performerState.panelA || !performerState.panelB) return;
 
-  const codeA = performerState.slotA.editor.getValue();
-  const codeB = performerState.slotB.editor.getValue();
-
-  window.electronAPI.runCode(
-    JSON.stringify({
-      slotA: codeA,
-      slotB: codeB,
-      compositeMode: performerState.compositeMode,
-      compositeParams: performerState.compositeParams,
-    }),
-  );
+  const patchA = performerState.panelA.getEditor().getValue();
+  const patchB = performerState.panelB.getEditor().getValue();
+  const payload: ExecutionPayload = {
+    patchA: patchA,
+    patchB: patchB,
+    compositeMode: performerState.compositeMode,
+    compositeParams: performerState.compositeParams,
+  };
+  window.electronAPI.runCode(JSON.stringify(payload));
 }
 
 function drawPreview(
@@ -198,15 +171,18 @@ function drawPreview(
   context.putImageData(imageData, 0, 0);
 }
 
-function handleExecutionResult(slot: SlotState, result: SlotExecutionResult) {
-  const model = slot.editor.getModel();
+function handleExecutionResult(panelId: 'A' | 'B', result: PatchExecutionResult) {
+  const panel = panelId === 'A' ? performerState.panelA : performerState.panelB;
+  if (!panel) return;
+
+  const model = panel.getEditor().getModel();
   if (!model) {
     return;
   }
 
   if (result.success) {
     monaco.editor.setModelMarkers(model, MARKER_OWNER, []);
-    updateSlotStatus(slot, STATUS_MESSAGES.READY);
+    updateStatus(panelId, STATUS_MESSAGES.READY);
     return;
   }
 
@@ -222,7 +198,7 @@ function handleExecutionResult(slot: SlotState, result: SlotExecutionResult) {
         severity: monaco.MarkerSeverity.Error,
       },
     ]);
-    updateSlotStatus(slot, STATUS_MESSAGES.ERROR, true, result.error.message);
+    updateStatus(panelId, STATUS_MESSAGES.ERROR, true, result.error.message);
   }
 }
 
@@ -435,77 +411,9 @@ function updateParamSlots(compositeModeId: string) {
   }
 }
 
-// Save functionality
-async function saveSlot(slot: SlotState, slotId: 'A' | 'B') {
-  const saved = await slot.patchController.save();
-  if (!saved) {
-    saveSlotAs(slot, slotId);
-  }
-}
-
-function saveSlotAs(slot: SlotState, slotId: 'A' | 'B') {
-  slot.patchController.triggerSaveAs('performer-save-as', { slotId });
-}
-
-// Revert functionality
-async function revertSlot(slot: SlotState, _slotId: 'A' | 'B') {
-  await slot.patchController.revert();
-}
-
-// Load patch into slot
-export async function loadPatchIntoSlot(patchPath: string, patchName: string, slotId: 'A' | 'B') {
-  const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
-  if (!slot) return;
-
-  await slot.patchController.load({ source: 'disk', filePath: patchPath, fileName: patchName });
-}
-
-// Create new patch in slot
-export function newSlotPatch(slotId: 'A' | 'B') {
-  const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
-  if (!slot) return;
-
-  void slot.patchController.clearFile();
-}
-
-// Setup drop zone for slot
-function setupDropZone(slot: SlotState, slotId: 'A' | 'B') {
-  const editorElement = slot.editor.getDomNode();
-  if (!editorElement) return;
-
-  editorElement.addEventListener('dragover', (event) => {
-    if (!event.dataTransfer) return;
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-    editorElement.style.opacity = '0.7';
-  });
-
-  editorElement.addEventListener('dragleave', () => {
-    editorElement.style.opacity = '1';
-  });
-
-  editorElement.addEventListener('drop', (event) => {
-    if (!event.dataTransfer) return;
-
-    event.preventDefault();
-    editorElement.style.opacity = '1';
-
-    const patchPath = event.dataTransfer.getData('patch-path');
-    const patchName = event.dataTransfer.getData('patch-name');
-
-    if (!patchPath) return;
-
-    void loadPatchIntoSlot(patchPath, patchName, slotId);
-  });
-}
-
 export function initPerformer() {
   const editorAContainer = requireElementById('editor-a');
   const editorBContainer = requireElementById('editor-b');
-
-  const slotAStatusElement = requireElementById('slot-a-status') as HTMLSpanElement;
-  const slotBStatusElement = requireElementById('slot-b-status') as HTMLSpanElement;
 
   const previewCanvasA = document.getElementById('preview-canvas-a') as HTMLCanvasElement;
   const previewCanvasB = document.getElementById('preview-canvas-b') as HTMLCanvasElement;
@@ -521,237 +429,108 @@ export function initPerformer() {
     previewContextB.imageSmoothingEnabled = true;
   }
 
-  const initialValueA = '// empty';
-  const initialValueB = '// empty';
-
-  // Create editor panels
-  const editorPanelA = new MonacoEditorPanel({
-    container: editorAContainer,
-    value: initialValueA,
+  // Create panel A
+  const panelA = new PatchPanel({
+    editorContainer: editorAContainer,
+    statusElement: requireElementById('panel-a-status'),
+    fileNameElement: requireElementById('panel-a-file-name'),
+    buttons: {
+      run: document.getElementById('run-a-btn'),
+      new: document.getElementById('new-a-btn'),
+      save: document.getElementById('save-a-btn'),
+      saveAs: document.getElementById('save-as-a-btn'),
+      revert: document.getElementById('revert-a-btn'),
+    },
+    initialValue: '// empty',
     readOnly: false,
     onRun: () => {
-      if (performerState.slotA) runSlot(performerState.slotA);
+      runPatch('A');
     },
-    onSave: () => {
-      if (performerState.slotA) void saveSlot(performerState.slotA, 'A');
-    },
-    onSaveAs: () => {
-      if (performerState.slotA) saveSlotAs(performerState.slotA, 'A');
-    },
-    onRevert: () => {
-      if (performerState.slotA) void revertSlot(performerState.slotA, 'A');
-    },
+    contextMenuActions: [
+      {
+        id: 'performer-open-in-composer-a',
+        label: 'Open in Composer',
+        run: () => {
+          if (!performerState.panelA) return;
+          const content = performerState.panelA.getEditor().getValue();
+          const filePath = performerState.panelA.getFilePath();
+          const fileName = performerState.panelA.getFileName();
+          const isDirty = performerState.panelA.isDirty();
+          const originalContent = performerState.panelA.getOriginalContent();
+          window.dispatchEvent(
+            new CustomEvent('performer-open-in-composer', {
+              detail: { content, source: 'A', filePath, fileName, isDirty, originalContent },
+            }),
+          );
+        },
+      },
+      {
+        id: 'performer-swap-patches-a',
+        label: 'Swap Patches A and B',
+        run: () => {
+          swapPerformerPatches();
+        },
+      },
+    ],
+    saveAsEventName: 'performer-save-as',
+    additionalSaveAsData: { panelId: 'A' },
+    fileNamePrefix: 'A: ',
   });
 
-  const editorPanelB = new MonacoEditorPanel({
-    container: editorBContainer,
-    value: initialValueB,
+  // Create panel B
+  const panelB = new PatchPanel({
+    editorContainer: editorBContainer,
+    statusElement: requireElementById('panel-b-status'),
+    fileNameElement: requireElementById('panel-b-file-name'),
+    buttons: {
+      run: document.getElementById('run-b-btn'),
+      new: document.getElementById('new-b-btn'),
+      save: document.getElementById('save-b-btn'),
+      saveAs: document.getElementById('save-as-b-btn'),
+      revert: document.getElementById('revert-b-btn'),
+    },
+    initialValue: '// empty',
     readOnly: false,
     onRun: () => {
-      if (performerState.slotB) runSlot(performerState.slotB);
+      runPatch('B');
     },
-    onSave: () => {
-      if (performerState.slotB) void saveSlot(performerState.slotB, 'B');
-    },
-    onSaveAs: () => {
-      if (performerState.slotB) saveSlotAs(performerState.slotB, 'B');
-    },
-    onRevert: () => {
-      if (performerState.slotB) void revertSlot(performerState.slotB, 'B');
-    },
-  });
-
-  const editorA = editorPanelA.getEditor();
-  const editorB = editorPanelB.getEditor();
-
-  // Initialize patch controllers
-  const patchControllerA = new PatchController(editorA, {
-    onStatusUpdate: (msg, isError) => {
-      if (performerState.slotA) updateSlotStatus(performerState.slotA, msg, isError);
-    },
-    onDirtyChange: () => {
-      if (performerState.slotA) updateFileTitle(performerState.slotA, 'A');
-    },
-    onFileChange: () => {
-      if (performerState.slotA) updateFileTitle(performerState.slotA, 'A');
-    },
-    onBeforeLoad: (_currentState) => {
-      const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
-      return confirmed ? 'discard' : 'cancel';
-    },
-    onAfterLoad: () => {
-      if (performerState.slotA) runSlot(performerState.slotA);
-    },
-    onAfterRevert: () => {
-      if (performerState.slotA) runSlot(performerState.slotA);
-    },
-  });
-
-  const patchControllerB = new PatchController(editorB, {
-    onStatusUpdate: (msg, isError) => {
-      if (performerState.slotB) updateSlotStatus(performerState.slotB, msg, isError);
-    },
-    onDirtyChange: () => {
-      if (performerState.slotB) updateFileTitle(performerState.slotB, 'B');
-    },
-    onFileChange: () => {
-      if (performerState.slotB) updateFileTitle(performerState.slotB, 'B');
-    },
-    onBeforeLoad: (_currentState) => {
-      const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
-      return confirmed ? 'discard' : 'cancel';
-    },
-    onAfterLoad: () => {
-      if (performerState.slotB) runSlot(performerState.slotB);
-    },
-    onAfterRevert: () => {
-      if (performerState.slotB) runSlot(performerState.slotB);
-    },
-  });
-
-  performerState.slotA = {
-    editorPanel: editorPanelA,
-    editor: editorA,
-    patchController: patchControllerA,
-    statusElement: slotAStatusElement,
-    previewCanvas: previewCanvasA,
-    previewContext: previewContextA,
-  };
-
-  performerState.slotB = {
-    editorPanel: editorPanelB,
-    editor: editorB,
-    patchController: patchControllerB,
-    statusElement: slotBStatusElement,
-    previewCanvas: previewCanvasB,
-    previewContext: previewContextB,
-  };
-
-  // Register context menu actions for slot A
-  registerContextMenuActions(editorA, [
-    {
-      id: 'performer-open-in-composer-a',
-      label: 'Open in Composer',
-      run: () => {
-        if (!performerState.slotA) return;
-        const content = performerState.slotA.editor.getValue();
-        const filePath = performerState.slotA.patchController.getFilePath();
-        const fileName = performerState.slotA.patchController.getFileName();
-        const isDirty = performerState.slotA.patchController.isDirty();
-        const originalContent = performerState.slotA.patchController.getOriginalContent();
-        window.dispatchEvent(
-          new CustomEvent('performer-open-in-composer', {
-            detail: { content, source: 'A', filePath, fileName, isDirty, originalContent },
-          }),
-        );
+    contextMenuActions: [
+      {
+        id: 'performer-open-in-composer-b',
+        label: 'Open in Composer',
+        run: () => {
+          if (!performerState.panelB) return;
+          const content = performerState.panelB.getEditor().getValue();
+          const filePath = performerState.panelB.getFilePath();
+          const fileName = performerState.panelB.getFileName();
+          const isDirty = performerState.panelB.isDirty();
+          const originalContent = performerState.panelB.getOriginalContent();
+          window.dispatchEvent(
+            new CustomEvent('performer-open-in-composer', {
+              detail: { content, source: 'B', filePath, fileName, isDirty, originalContent },
+            }),
+          );
+        },
       },
-    },
-    {
-      id: 'performer-swap-slots-a',
-      label: 'Swap Slots',
-      run: () => {
-        swapPerformerSlots();
+      {
+        id: 'performer-swap-patches-b',
+        label: 'Swap Patches A and B',
+        run: () => {
+          swapPerformerPatches();
+        },
       },
-    },
-  ]);
-
-  // Register context menu actions for slot B
-  registerContextMenuActions(editorB, [
-    {
-      id: 'performer-open-in-composer-b',
-      label: 'Open in Composer',
-      run: () => {
-        if (!performerState.slotB) return;
-        const content = performerState.slotB.editor.getValue();
-        const filePath = performerState.slotB.patchController.getFilePath();
-        const fileName = performerState.slotB.patchController.getFileName();
-        const isDirty = performerState.slotB.patchController.isDirty();
-        const originalContent = performerState.slotB.patchController.getOriginalContent();
-        window.dispatchEvent(
-          new CustomEvent('performer-open-in-composer', {
-            detail: { content, source: 'B', filePath, fileName, isDirty, originalContent },
-          }),
-        );
-      },
-    },
-    {
-      id: 'performer-swap-slots-b',
-      label: 'Swap Slots',
-      run: () => {
-        swapPerformerSlots();
-      },
-    },
-  ]);
-
-  // Setup drop zones
-  setupDropZone(performerState.slotA, 'A');
-  setupDropZone(performerState.slotB, 'B');
-
-  // Note: Global keyboard shortcuts (Cmd+0, Cmd+1, Cmd+2) are handled in editor.ts
-
-  // Button handlers
-  document.getElementById('run-a-btn')?.addEventListener('click', () => {
-    if (performerState.slotA) runSlot(performerState.slotA);
+    ],
+    saveAsEventName: 'performer-save-as',
+    additionalSaveAsData: { panelId: 'B' },
+    fileNamePrefix: 'B: ',
   });
 
-  document.getElementById('new-a-btn')?.addEventListener('click', () => {
-    newSlotPatch('A');
-  });
-
-  document.getElementById('run-b-btn')?.addEventListener('click', () => {
-    if (performerState.slotB) runSlot(performerState.slotB);
-  });
-
-  document.getElementById('new-b-btn')?.addEventListener('click', () => {
-    newSlotPatch('B');
-  });
-
-  document.getElementById('save-a-btn')?.addEventListener('click', () => {
-    if (performerState.slotA) void saveSlot(performerState.slotA, 'A');
-  });
-
-  document.getElementById('save-as-a-btn')?.addEventListener('click', () => {
-    if (performerState.slotA) saveSlotAs(performerState.slotA, 'A');
-  });
-
-  document.getElementById('save-b-btn')?.addEventListener('click', () => {
-    if (performerState.slotB) void saveSlot(performerState.slotB, 'B');
-  });
-
-  document.getElementById('save-as-b-btn')?.addEventListener('click', () => {
-    if (performerState.slotB) saveSlotAs(performerState.slotB, 'B');
-  });
-
-  document.getElementById('revert-a-btn')?.addEventListener('click', () => {
-    if (performerState.slotA) void revertSlot(performerState.slotA, 'A');
-  });
-
-  document.getElementById('revert-b-btn')?.addEventListener('click', () => {
-    if (performerState.slotB) void revertSlot(performerState.slotB, 'B');
-  });
-
-  // File name click handlers - reveal file in explorer
-  document.getElementById('slot-a-file-name')?.addEventListener('click', () => {
-    const filePath = performerState.slotA?.patchController.getFilePath();
-    if (filePath) {
-      window.dispatchEvent(
-        new CustomEvent('reveal-file-in-explorer', {
-          detail: { filePath },
-        }),
-      );
-    }
-  });
-
-  document.getElementById('slot-b-file-name')?.addEventListener('click', () => {
-    const filePath = performerState.slotB?.patchController.getFilePath();
-    if (filePath) {
-      window.dispatchEvent(
-        new CustomEvent('reveal-file-in-explorer', {
-          detail: { filePath },
-        }),
-      );
-    }
-  });
+  performerState.panelA = panelA;
+  performerState.panelB = panelB;
+  performerState.previewCanvasA = previewCanvasA;
+  performerState.previewCanvasB = previewCanvasB;
+  performerState.previewContextA = previewContextA;
+  performerState.previewContextB = previewContextB;
 
   // Composite controls
   const compositeModeSelect = document.getElementById(
@@ -814,9 +593,9 @@ export function initPerformer() {
   }
 
   // Listen for execution results
-  window.electronAPI.onExecutionResults((results: ExecutionResultsPayload) => {
-    if (performerState.slotA) handleExecutionResult(performerState.slotA, results.slotA);
-    if (performerState.slotB) handleExecutionResult(performerState.slotB, results.slotB);
+  window.electronAPI.onExecutionResults((results: ResultsPayload) => {
+    handleExecutionResult('A', results.resultA);
+    handleExecutionResult('B', results.resultB);
   });
 
   // When output window is ready, send current code
@@ -847,9 +626,9 @@ export function showPerformer() {
 
   // Subscribe to preview frames from output window
   performerState.previewFramesDisposable = window.electronAPI.onPreviewFrames((frameA, frameB) => {
-    if (!performerState.slotA || !performerState.slotB) return;
-    drawPreview(performerState.slotA.previewContext, performerState.slotA.previewCanvas, frameA);
-    drawPreview(performerState.slotB.previewContext, performerState.slotB.previewCanvas, frameB);
+    if (!performerState.previewCanvasA || !performerState.previewCanvasB) return;
+    drawPreview(performerState.previewContextA, performerState.previewCanvasA, frameA);
+    drawPreview(performerState.previewContextB, performerState.previewCanvasB, frameB);
   });
 
   // Auto-run on first show
@@ -868,29 +647,7 @@ export function hidePerformer() {
   }
 }
 
-// Trigger save for slot (called from main editor)
-export function triggerSlotSave(slotId: 'A' | 'B', filePath: string, content: string) {
-  const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
-  if (!slot) return;
-
-  slot.patchController.onSaveAsComplete(filePath, content);
-  updateFileTitle(slot, slotId);
-}
-
 // Get performer state (for external access)
 export function getPerformerState() {
   return performerState;
-}
-
-// Save slots (for external access, e.g., quit handler)
-export async function saveSlotA() {
-  if (performerState.slotA) {
-    await saveSlot(performerState.slotA, 'A');
-  }
-}
-
-export async function saveSlotB() {
-  if (performerState.slotB) {
-    await saveSlot(performerState.slotB, 'B');
-  }
 }

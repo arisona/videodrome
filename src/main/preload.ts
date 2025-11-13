@@ -3,11 +3,11 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { IPC_CHANNELS } from '../shared/constants';
 
 import type {
-  ExecutionResultsPayload,
-  MediaType,
-  PreviewFrame,
-  PatchFile,
   MediaFile,
+  MediaType,
+  PatchFile,
+  PreviewFrame,
+  ResultsPayload,
   Settings,
 } from '../shared/types';
 import type { HydraSourceSlot } from 'hydra-synth';
@@ -18,13 +18,13 @@ const previewFrameListeners: Array<
 > = [];
 const previewPortReadyListeners: Array<() => void> = [];
 
-function isExecutionResultsPayload(value: unknown): value is ExecutionResultsPayload {
+function isResultsPayload(value: unknown): value is ResultsPayload {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
 
   const candidate = value as Record<string, unknown>;
-  return 'slotA' in candidate && 'slotB' in candidate;
+  return 'resultA' in candidate && 'resultB' in candidate;
 }
 
 function handlePreviewChannel(event: IpcRendererEvent) {
@@ -150,12 +150,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
   isPreviewPortReady: () => previewPort !== null,
-  sendExecutionResults: (results: ExecutionResultsPayload) => {
+  sendExecutionResults: (results: ResultsPayload) => {
     ipcRenderer.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
   },
-  onExecutionResults: (callback: (results: ExecutionResultsPayload) => void) => {
+  onExecutionResults: (callback: (results: ResultsPayload) => void) => {
     ipcRenderer.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results) => {
-      if (isExecutionResultsPayload(results)) {
+      if (isResultsPayload(results)) {
         callback(results);
       }
     });
