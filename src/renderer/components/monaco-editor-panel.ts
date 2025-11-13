@@ -201,9 +201,7 @@ export class MonacoEditorPanel {
         if (detection) {
           this.lastHoverPosition = currentPosition;
 
-          // Set a timer to show the widget after delay
           this.hoverTimer = setTimeout(() => {
-            // Check if parameter control popup is enabled
             if (!getSettings().parameterControl.enabled) {
               return;
             }

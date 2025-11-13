@@ -20,7 +20,6 @@ import {
 import { registerContextMenuActions } from './monaco-setup';
 import { getSettings } from './settings-service';
 import { requireElementById } from './utils/dom';
-import * as EditorState from './utils/editor-state';
 import { PatchController } from './utils/patch-controller';
 
 import type { ExecutionResultsPayload, PreviewFrame, SlotExecutionResult } from '../shared/types';
@@ -32,14 +31,10 @@ const MODAL_HOVER_DELAY_MS = 1000;
 interface SlotState {
   editorPanel: MonacoEditorPanel;
   editor: monaco.editor.IStandaloneCodeEditor;
-  fileController: PatchController;
+  patchController: PatchController;
   statusElement: HTMLElement;
   previewCanvas: HTMLCanvasElement;
   previewContext: CanvasRenderingContext2D | null;
-  // Compatibility properties for code that hasn't been migrated yet
-  loadedFile: string | null;
-  isDirty: boolean;
-  originalContent: string;
 }
 
 let performerState: {
@@ -60,13 +55,14 @@ let performerState: {
 
 // Update slot status
 function updateSlotStatus(slot: SlotState, status: string, isError = false, tooltip?: string) {
-  const stateData = {
-    statusElement: slot.statusElement,
-    loadedFile: slot.fileController.getFilePath(),
-    isDirty: slot.fileController.isDirty(),
-    originalContent: '', // Not needed for updateStatus
-  };
-  EditorState.updateStatus(stateData, status, isError, tooltip);
+  slot.statusElement.textContent = status;
+  slot.statusElement.style.color = isError ? '#f48771' : '#858585';
+
+  if (tooltip) {
+    slot.statusElement.setAttribute('title', tooltip);
+  } else {
+    slot.statusElement.removeAttribute('title');
+  }
 }
 
 // Update file title display
@@ -75,8 +71,8 @@ function updateFileTitle(slot: SlotState, slotId: 'A' | 'B') {
   const fileNameElement = document.getElementById(elementId);
   if (!fileNameElement) return;
 
-  const fileName = slot.fileController.getFileName();
-  const isDirty = slot.fileController.isDirty();
+  const fileName = slot.patchController.getFileName();
+  const isDirty = slot.patchController.isDirty();
   const dirtyIndicator = isDirty ? ' •' : '';
 
   if (fileName) {
@@ -95,21 +91,21 @@ function swapPerformerSlots(): void {
   // Capture current state of both slots
   const stateA = {
     content: performerState.slotA.editor.getValue(),
-    filePath: performerState.slotA.fileController.getFilePath(),
-    fileName: performerState.slotA.fileController.getFileName(),
-    originalContent: performerState.slotA.fileController.getOriginalContent(),
+    filePath: performerState.slotA.patchController.getFilePath(),
+    fileName: performerState.slotA.patchController.getFileName(),
+    originalContent: performerState.slotA.patchController.getOriginalContent(),
   };
 
   const stateB = {
     content: performerState.slotB.editor.getValue(),
-    filePath: performerState.slotB.fileController.getFilePath(),
-    fileName: performerState.slotB.fileController.getFileName(),
-    originalContent: performerState.slotB.fileController.getOriginalContent(),
+    filePath: performerState.slotB.patchController.getFilePath(),
+    fileName: performerState.slotB.patchController.getFileName(),
+    originalContent: performerState.slotB.patchController.getOriginalContent(),
   };
 
   // Swap using file controller methods (which will trigger onAfterLoad and run the patches)
   if (stateB.filePath && stateB.fileName) {
-    void performerState.slotA.fileController.load({
+    void performerState.slotA.patchController.load({
       source: 'memory',
       filePath: stateB.filePath,
       fileName: stateB.fileName,
@@ -118,14 +114,14 @@ function swapPerformerSlots(): void {
     });
   } else {
     // No file path - load as new patch with the content
-    void performerState.slotA.fileController.load({
+    void performerState.slotA.patchController.load({
       source: 'new',
       content: stateB.content,
     });
   }
 
   if (stateA.filePath && stateA.fileName) {
-    void performerState.slotB.fileController.load({
+    void performerState.slotB.patchController.load({
       source: 'memory',
       filePath: stateA.filePath,
       fileName: stateA.fileName,
@@ -134,7 +130,7 @@ function swapPerformerSlots(): void {
     });
   } else {
     // No file path - load as new patch with the content
-    void performerState.slotB.fileController.load({
+    void performerState.slotB.patchController.load({
       source: 'new',
       content: stateA.content,
     });
@@ -440,17 +436,20 @@ function updateParamSlots(compositeModeId: string) {
 }
 
 // Save functionality
-async function saveSlot(slot: SlotState, _slotId: 'A' | 'B') {
-  await slot.fileController.save();
+async function saveSlot(slot: SlotState, slotId: 'A' | 'B') {
+  const saved = await slot.patchController.save();
+  if (!saved) {
+    saveSlotAs(slot, slotId);
+  }
 }
 
 function saveSlotAs(slot: SlotState, slotId: 'A' | 'B') {
-  slot.fileController.triggerSaveAs('performer-save-as', { slotId });
+  slot.patchController.triggerSaveAs('performer-save-as', { slotId });
 }
 
 // Revert functionality
 async function revertSlot(slot: SlotState, _slotId: 'A' | 'B') {
-  await slot.fileController.revert();
+  await slot.patchController.revert();
 }
 
 // Load patch into slot
@@ -458,7 +457,7 @@ export async function loadPatchIntoSlot(patchPath: string, patchName: string, sl
   const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
   if (!slot) return;
 
-  await slot.fileController.load({ source: 'disk', filePath: patchPath, fileName: patchName });
+  await slot.patchController.load({ source: 'disk', filePath: patchPath, fileName: patchName });
 }
 
 // Create new patch in slot
@@ -466,7 +465,7 @@ export function newSlotPatch(slotId: 'A' | 'B') {
   const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
   if (!slot) return;
 
-  void slot.fileController.clearFile();
+  void slot.patchController.clearFile();
 }
 
 // Setup drop zone for slot
@@ -565,8 +564,8 @@ export function initPerformer() {
   const editorA = editorPanelA.getEditor();
   const editorB = editorPanelB.getEditor();
 
-  // Initialize file controllers
-  const fileControllerA = new PatchController(editorA, {
+  // Initialize patch controllers
+  const patchControllerA = new PatchController(editorA, {
     onStatusUpdate: (msg, isError) => {
       if (performerState.slotA) updateSlotStatus(performerState.slotA, msg, isError);
     },
@@ -577,7 +576,7 @@ export function initPerformer() {
       if (performerState.slotA) updateFileTitle(performerState.slotA, 'A');
     },
     onBeforeLoad: (_currentState) => {
-      const confirmed = window.confirm('Performer slot A is modified.\n\nClick OK to overwrite.');
+      const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
       return confirmed ? 'discard' : 'cancel';
     },
     onAfterLoad: () => {
@@ -588,7 +587,7 @@ export function initPerformer() {
     },
   });
 
-  const fileControllerB = new PatchController(editorB, {
+  const patchControllerB = new PatchController(editorB, {
     onStatusUpdate: (msg, isError) => {
       if (performerState.slotB) updateSlotStatus(performerState.slotB, msg, isError);
     },
@@ -599,7 +598,7 @@ export function initPerformer() {
       if (performerState.slotB) updateFileTitle(performerState.slotB, 'B');
     },
     onBeforeLoad: (_currentState) => {
-      const confirmed = window.confirm('Performer slot B is modified.\n\nClick OK to overwrite.');
+      const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
       return confirmed ? 'discard' : 'cancel';
     },
     onAfterLoad: () => {
@@ -610,41 +609,22 @@ export function initPerformer() {
     },
   });
 
-  // Initialize slot states with getter properties for compatibility
   performerState.slotA = {
     editorPanel: editorPanelA,
     editor: editorA,
-    fileController: fileControllerA,
+    patchController: patchControllerA,
     statusElement: slotAStatusElement,
     previewCanvas: previewCanvasA,
     previewContext: previewContextA,
-    get loadedFile() {
-      return fileControllerA.getFilePath();
-    },
-    get isDirty() {
-      return fileControllerA.isDirty();
-    },
-    get originalContent() {
-      return '';
-    },
   };
 
   performerState.slotB = {
     editorPanel: editorPanelB,
     editor: editorB,
-    fileController: fileControllerB,
+    patchController: patchControllerB,
     statusElement: slotBStatusElement,
     previewCanvas: previewCanvasB,
     previewContext: previewContextB,
-    get loadedFile() {
-      return fileControllerB.getFilePath();
-    },
-    get isDirty() {
-      return fileControllerB.isDirty();
-    },
-    get originalContent() {
-      return '';
-    },
   };
 
   // Register context menu actions for slot A
@@ -655,10 +635,10 @@ export function initPerformer() {
       run: () => {
         if (!performerState.slotA) return;
         const content = performerState.slotA.editor.getValue();
-        const filePath = performerState.slotA.fileController.getFilePath();
-        const fileName = performerState.slotA.fileController.getFileName();
-        const isDirty = performerState.slotA.fileController.isDirty();
-        const originalContent = performerState.slotA.fileController.getOriginalContent();
+        const filePath = performerState.slotA.patchController.getFilePath();
+        const fileName = performerState.slotA.patchController.getFileName();
+        const isDirty = performerState.slotA.patchController.isDirty();
+        const originalContent = performerState.slotA.patchController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('performer-open-in-composer', {
             detail: { content, source: 'A', filePath, fileName, isDirty, originalContent },
@@ -683,10 +663,10 @@ export function initPerformer() {
       run: () => {
         if (!performerState.slotB) return;
         const content = performerState.slotB.editor.getValue();
-        const filePath = performerState.slotB.fileController.getFilePath();
-        const fileName = performerState.slotB.fileController.getFileName();
-        const isDirty = performerState.slotB.fileController.isDirty();
-        const originalContent = performerState.slotB.fileController.getOriginalContent();
+        const filePath = performerState.slotB.patchController.getFilePath();
+        const fileName = performerState.slotB.patchController.getFileName();
+        const isDirty = performerState.slotB.patchController.isDirty();
+        const originalContent = performerState.slotB.patchController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('performer-open-in-composer', {
             detail: { content, source: 'B', filePath, fileName, isDirty, originalContent },
@@ -752,7 +732,7 @@ export function initPerformer() {
 
   // File name click handlers - reveal file in explorer
   document.getElementById('slot-a-file-name')?.addEventListener('click', () => {
-    const filePath = performerState.slotA?.fileController.getFilePath();
+    const filePath = performerState.slotA?.patchController.getFilePath();
     if (filePath) {
       window.dispatchEvent(
         new CustomEvent('reveal-file-in-explorer', {
@@ -763,7 +743,7 @@ export function initPerformer() {
   });
 
   document.getElementById('slot-b-file-name')?.addEventListener('click', () => {
-    const filePath = performerState.slotB?.fileController.getFilePath();
+    const filePath = performerState.slotB?.patchController.getFilePath();
     if (filePath) {
       window.dispatchEvent(
         new CustomEvent('reveal-file-in-explorer', {
@@ -893,7 +873,7 @@ export function triggerSlotSave(slotId: 'A' | 'B', filePath: string, content: st
   const slot = slotId === 'A' ? performerState.slotA : performerState.slotB;
   if (!slot) return;
 
-  slot.fileController.onSaveAsComplete(filePath, content);
+  slot.patchController.onSaveAsComplete(filePath, content);
   updateFileTitle(slot, slotId);
 }
 

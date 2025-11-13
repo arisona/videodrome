@@ -340,7 +340,7 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
     // Load content using unified load method
     if (filePath && _fileName) {
       // Load with file relationship
-      void slot.fileController.load({
+      void slot.patchController.load({
         source: 'memory',
         filePath,
         fileName: _fileName,
@@ -349,7 +349,7 @@ window.addEventListener('composer-open-in-performer', ((event: CustomEvent) => {
       });
     } else {
       // Load as new patch without file relationship
-      void slot.fileController.load({
+      void slot.patchController.load({
         source: 'new',
         content,
       });
@@ -383,7 +383,7 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
     // Load content using unified load method
     if (filePath && _fileName) {
       // Load with file relationship
-      void composerState.fileController.load({
+      void composerState.patchController.load({
         source: 'memory',
         filePath,
         fileName: _fileName,
@@ -392,7 +392,7 @@ window.addEventListener('performer-open-in-composer', ((event: CustomEvent) => {
       });
     } else {
       // Load as new patch without file relationship
-      void composerState.fileController.load({
+      void composerState.patchController.load({
         source: 'new',
         content,
       });
@@ -409,14 +409,14 @@ function createNewPatch(): void {
     const state = getComposerState();
     if (state) {
       content = state.editor.getValue();
-      loadedFile = state.loadedFile;
+      loadedFile = state.patchController.getFilePath();
     }
   } else {
     // In perform tab, try to get content from focused slot or default to slot A
     const performerState = getPerformerState();
     if (performerState.slotA) {
       content = performerState.slotA.editor.getValue();
-      loadedFile = performerState.slotA.loadedFile;
+      loadedFile = performerState.slotA.patchController.getFilePath();
     }
   }
 
@@ -433,21 +433,6 @@ function createNewPatch(): void {
 
     try {
       await window.electronAPI.savePatch(filePath, content);
-
-      // Update the current editor's state
-      if (currentMainTab === 'compose') {
-        const state = getComposerState();
-        if (state) {
-          state.loadedFile = filePath;
-          state.originalContent = content;
-          state.isDirty = false;
-        }
-      } else {
-        const performerState = getPerformerState();
-        if (performerState.slotA) {
-          triggerSlotSave('A', filePath, content);
-        }
-      }
 
       await loadPatches();
     } catch (error) {
@@ -479,7 +464,7 @@ window.addEventListener('composer-save-as', ((event: CustomEvent) => {
 
       const state = getComposerState();
       if (state) {
-        state.fileController.onSaveAsComplete(filePath, content);
+        state.patchController.onSaveAsComplete(filePath, content);
       }
 
       await loadPatches();
@@ -567,15 +552,15 @@ function checkUnsavedChanges(): boolean {
   const composer = getComposerState();
   const performer = getPerformerState();
 
-  if (composer?.isDirty) {
+  if (composer?.patchController.isDirty()) {
     return true;
   }
 
-  if (performer.slotA?.isDirty) {
+  if (performer.slotA?.patchController.isDirty()) {
     return true;
   }
 
-  if (performer.slotB?.isDirty) {
+  if (performer.slotB?.patchController.isDirty()) {
     return true;
   }
 
@@ -588,17 +573,25 @@ async function saveAllBeforeQuit(): Promise<void> {
   const performer = getPerformerState();
 
   // Save composer if dirty and has a file loaded
-  if (composer && composer.isDirty && composer.loadedFile) {
+  if (composer && composer.patchController.isDirty() && composer.patchController.getFilePath()) {
     await saveComposer();
   }
 
   // Save performer slot A if dirty and has a file loaded
-  if (performer.slotA && performer.slotA.isDirty && performer.slotA.loadedFile) {
+  if (
+    performer.slotA &&
+    performer.slotA.patchController.isDirty() &&
+    performer.slotA.patchController.getFilePath()
+  ) {
     await saveSlotA();
   }
 
   // Save performer slot B if dirty and has a file loaded
-  if (performer.slotB && performer.slotB.isDirty && performer.slotB.loadedFile) {
+  if (
+    performer.slotB &&
+    performer.slotB.patchController.isDirty() &&
+    performer.slotB.patchController.getFilePath()
+  ) {
     await saveSlotB();
   }
 }

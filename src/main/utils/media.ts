@@ -11,7 +11,6 @@ import { createDirectorySkipFilter, createExtensionFilter, scanDirectory } from 
 
 import type { MediaFile, MediaType } from '../../shared/types';
 
-// Media file handlers
 export function getMediaType(fileName: string): MediaType | null {
   const ext = path.extname(fileName).toLowerCase();
   if ((SUPPORTED_IMAGE_EXTS as ReadonlyArray<string>).includes(ext)) return 'image';

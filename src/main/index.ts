@@ -13,7 +13,6 @@ import { isPathWithinRoot, isValidName, safeJoin } from './utils/path-security';
 
 import type { ExecutionResultsPayload, Settings } from '../shared/types';
 
-// Constants
 const EDITOR_WINDOW_WIDTH = 1200;
 const EDITOR_WINDOW_HEIGHT = 800;
 const OUTPUT_WINDOW_WIDTH = 640;
@@ -33,7 +32,6 @@ if (!app.isPackaged) {
 
 let editorWindow: BrowserWindow | null = null;
 let outputWindow: BrowserWindow | null = null;
-// Minimal directory state (for watchers and security validation)
 let patchDirectory = '';
 let mediaDirectory = '';
 let previewChannel: MessageChannelMain | null = null;
@@ -56,7 +54,6 @@ function startWatchers(): void {
     return;
   }
 
-  // Debounced full directory rescans for patches
   const sendPatches = debounce(() => {
     if (!editorWindow) return;
     try {
@@ -70,7 +67,6 @@ function startWatchers(): void {
     }
   }, WATCHER_DEBOUNCE_MS);
 
-  // Debounced full directory rescans for media
   const sendMedia = debounce(() => {
     if (!editorWindow) return;
     try {
@@ -129,7 +125,7 @@ function createEditorWindowAndShow() {
 
   editorWindow.on('closed', () => {
     editorWindow = null;
-    // Close output window when editor closes
+
     outputWindow?.hide();
   });
 }
@@ -171,7 +167,6 @@ function createOutputWindowAndKeepHidden() {
     previewChannel = null;
   });
 
-  // When output window finishes loading, notify editor to sync code
   outputWindow.webContents.on('did-finish-load', () => {
     editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_READY);
     editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
@@ -211,7 +206,6 @@ void app
 
     // Note: Settings are initialized by renderer via settings service
     // Watchers will be started when renderer calls updateDirectories()
-
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         createEditorWindowAndShow();
@@ -226,17 +220,14 @@ void app
   });
 
 app.on('before-quit', (event) => {
-  // If we're already in the process of quitting (user chose to quit), allow it
   if (appIsQuitting) {
     stopWatchers();
     return;
   }
 
-  // Prevent quit to check for unsaved changes
   event.preventDefault();
 
   void (async () => {
-    // Check if editor window exists and can communicate
     if (!editorWindow || editorWindow.isDestroyed()) {
       appIsQuitting = true;
       app.quit();
@@ -296,7 +287,6 @@ app.on('window-all-closed', () => {
 
 // IPC handlers
 ipcMain.on(IPC_CHANNELS.EDITOR_CODE_RUN, (_event, code: string) => {
-  // Forward code to output window
   outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_CODE_RUN, code);
 });
 
@@ -417,7 +407,6 @@ ipcMain.handle(
   },
 );
 
-// Patch file handlers
 ipcMain.handle(IPC_CHANNELS.EDITOR_PATCHES_LIST, () => {
   try {
     const patchDir = patchDirectory;

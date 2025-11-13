@@ -37,7 +37,6 @@ export function saveSettings(settings: Settings): void {
   const settingsPath = getSettingsPath();
 
   try {
-    // Ensure directory exists
     const settingsDir = path.dirname(settingsPath);
     if (!fs.existsSync(settingsDir)) {
       fs.mkdirSync(settingsDir, { recursive: true });

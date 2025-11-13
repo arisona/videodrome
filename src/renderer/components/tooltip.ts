@@ -62,12 +62,10 @@ function handleMouseOver(event: MouseEvent): void {
 
   const tooltipTarget = element;
 
-  // Don't show tooltip if element is disabled
   if (tooltipTarget.hasAttribute('disabled')) return;
 
   currentTarget = tooltipTarget;
 
-  // Get tooltip text from title or data-tooltip attribute
   const tooltipText =
     tooltipTarget.getAttribute('data-tooltip') ?? tooltipTarget.getAttribute('title');
 
@@ -86,7 +84,6 @@ function handleMouseOver(event: MouseEvent): void {
 function handleMouseOut(event: MouseEvent): void {
   const relatedTarget = event.relatedTarget as HTMLElement | null;
 
-  // Check if we're leaving the current tooltip target
   if (currentTarget && !currentTarget.contains(relatedTarget)) {
     hideTooltip();
     currentTarget = null;
@@ -105,9 +102,7 @@ function showTooltip(text: string, x: number, y: number): void {
 }
 
 function hideTooltip(): void {
-  // Cancel any pending tooltip show
   debouncedShowTooltip.cancel();
-
   if (tooltipElement) {
     tooltipElement.classList.remove('show');
   }

@@ -10,10 +10,10 @@ interface GifSourceState {
   canvas: HTMLCanvasElement;
 }
 
-// Track active GIF sources for cleanup
+// Track active gif sources for cleanup
 const activeGifSources = new Map<string, GifSourceState>();
 
-// Cleanup a GIF source
+// Cleanup a gid source
 function cleanupGifSource(slot: string): void {
   const state = activeGifSources.get(slot);
   if (!state) return;
@@ -30,7 +30,7 @@ function cleanupGifSource(slot: string): void {
     try {
       state.decoder.close();
     } catch (error) {
-      console.error('[GIF] Error closing decoder:', error);
+      console.error('Error closing gif decoder:', error);
     }
     state.decoder = null;
   }
@@ -43,11 +43,11 @@ export async function initGifSource(
   slot: HydraSourceSlot,
   mediaUrl: string,
 ): Promise<void> {
-  // Clean up previous GIF for this slot
+  // Clean up previous gif for this slot
   cleanupGifSource(slot);
 
-  // Use ImageDecoder API to decode animated GIF frames
-  // This properly handles multi-frame GIFs with frame timing
+  // Use ImageDecoder API to decode animated gif frames
+  // This properly handles multi-frame gifs with frame timing
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return;
@@ -68,11 +68,11 @@ export async function initGifSource(
   try {
     // Check if ImageDecoder is available
     if (!('ImageDecoder' in globalThis)) {
-      console.error('[GIF] ImageDecoder API not available');
+      console.error('ImageDecoder API not available');
       return;
     }
 
-    // Fetch the GIF data
+    // Fetch the gif data
     const response = await fetch(mediaUrl);
     const arrayBuffer = await response.arrayBuffer();
 
@@ -87,7 +87,7 @@ export async function initGifSource(
     const track = decoder.tracks.selectedTrack;
 
     if (!track) {
-      console.error('[GIF] No track found in GIF');
+      console.error('No track found in gif');
       return;
     }
 
@@ -132,7 +132,7 @@ export async function initGifSource(
         timeoutId = window.setTimeout(() => void renderFrame(), durationMs);
         state.timeoutId = timeoutId;
       } catch (error) {
-        console.error('[GIF] Error decoding frame:', error);
+        console.error('Error decoding gif frame:', error);
         state.playing = false;
       }
     }
@@ -140,7 +140,7 @@ export async function initGifSource(
     // Start animation
     void renderFrame();
   } catch (error) {
-    console.error('[GIF] Error initializing GIF:', error);
+    console.error('Error initializing gif:', error);
     // Clean up on error
     cleanupGifSource(slot);
   }

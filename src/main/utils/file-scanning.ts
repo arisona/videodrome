@@ -51,7 +51,6 @@ export function scanDirectory(rootPath: string, options: ScanOptions = {}): Arra
     try {
       const files = fs.readdirSync(dirPath, { withFileTypes: true });
 
-      // Sort if requested
       const sortedFiles = sortDirectoriesFirst
         ? files.sort((a, b) => {
             if (a.isDirectory() && !b.isDirectory()) return -1;
@@ -61,7 +60,6 @@ export function scanDirectory(rootPath: string, options: ScanOptions = {}): Arra
         : files;
 
       for (const file of sortedFiles) {
-        // Skip hidden files if requested
         if (skipHiddenFiles && file.name.startsWith('.')) {
           continue;
         }
@@ -70,12 +68,10 @@ export function scanDirectory(rootPath: string, options: ScanOptions = {}): Arra
         const fileRelativePath = relativePath ? `${relativePath}/${file.name}` : file.name;
 
         if (file.isDirectory()) {
-          // Check directory filter
           if (!directoryFilter(relativePath, file.name)) {
             continue;
           }
 
-          // Add directory to results
           results.push({
             name: file.name,
             path: fullPath,
@@ -84,10 +80,8 @@ export function scanDirectory(rootPath: string, options: ScanOptions = {}): Arra
             depth,
           });
 
-          // Recursively scan subdirectory
           scan(fullPath, fileRelativePath, depth + 1);
         } else {
-          // Check file filter
           if (fileFilter(file.name)) {
             results.push({
               name: file.name,
@@ -134,11 +128,9 @@ export function createDirectorySkipFilter(
   patterns: ReadonlyArray<string>,
 ): (relativePath: string, fileName: string) => boolean {
   return (relativePath: string, fileName: string) => {
-    // Check if the filename matches any pattern
     if (patterns.some((pattern) => fileName === pattern)) {
       return false;
     }
-    // Check if the relative path contains any pattern
     if (patterns.some((pattern) => relativePath.includes(pattern))) {
       return false;
     }

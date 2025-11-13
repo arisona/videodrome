@@ -14,7 +14,6 @@ import {
 } from './hydra/hydra-execution';
 import { registerContextMenuActions } from './monaco-setup';
 import { requireElementById } from './utils/dom';
-import * as EditorState from './utils/editor-state';
 import { PatchController } from './utils/patch-controller';
 
 import type { MediaType } from '../shared/types';
@@ -26,27 +25,25 @@ const MARKER_OWNER = 'hydra-composer';
 interface ComposerState {
   editorPanel: MonacoEditorPanel;
   editor: monaco.editor.IStandaloneCodeEditor;
-  fileController: PatchController;
+  patchController: PatchController;
   statusElement: HTMLElement;
   hydra: Hydra | null;
   isActive: boolean;
-  // Compatibility properties for code that hasn't been migrated yet
-  loadedFile: string | null;
-  isDirty: boolean;
-  originalContent: string;
 }
 
 let composerState: ComposerState | null = null;
 
 function updateStatus(status: string, isError = false, tooltip?: string) {
   if (!composerState) return;
-  const stateData = {
-    statusElement: composerState.statusElement,
-    loadedFile: composerState.fileController.getFilePath(),
-    isDirty: composerState.fileController.isDirty(),
-    originalContent: '', // Not needed for updateStatus
-  };
-  EditorState.updateStatus(stateData, status, isError, tooltip);
+
+  composerState.statusElement.textContent = status;
+  composerState.statusElement.style.color = isError ? '#f48771' : '#858585';
+
+  if (tooltip) {
+    composerState.statusElement.setAttribute('title', tooltip);
+  } else {
+    composerState.statusElement.removeAttribute('title');
+  }
 }
 
 // Update file title display
@@ -54,8 +51,8 @@ function updateFileTitle() {
   const fileNameElement = document.getElementById('composer-file-name');
   if (!fileNameElement || !composerState) return;
 
-  const fileName = composerState.fileController.getFileName();
-  const isDirty = composerState.fileController.isDirty();
+  const fileName = composerState.patchController.getFileName();
+  const isDirty = composerState.patchController.isDirty();
   const dirtyIndicator = isDirty ? ' •' : '';
 
   if (fileName) {
@@ -209,21 +206,25 @@ export function runComposer() {
 
 // Save functionality
 export async function saveComposer() {
-  await composerState?.fileController.save();
+  if (!composerState) return;
+  const saved = await composerState.patchController.save();
+  if (!saved) {
+    saveComposerAs();
+  }
 }
 
 export function saveComposerAs() {
-  composerState?.fileController.triggerSaveAs('composer-save-as');
+  composerState?.patchController.triggerSaveAs('composer-save-as');
 }
 
 // Revert functionality
 export async function revertComposer() {
-  await composerState?.fileController.revert();
+  await composerState?.patchController.revert();
 }
 
 // Load patch into composer
 export async function loadPatchIntoComposer(patchPath: string, patchName: string) {
-  await composerState?.fileController.load({
+  await composerState?.patchController.load({
     source: 'disk',
     filePath: patchPath,
     fileName: patchName,
@@ -232,7 +233,7 @@ export async function loadPatchIntoComposer(patchPath: string, patchName: string
 
 // Create new patch in composer
 export function newComposerPatch() {
-  void composerState?.fileController.clearFile();
+  void composerState?.patchController.clearFile();
 }
 
 // Initialize composer tab
@@ -292,7 +293,7 @@ solid(0, 0, 0)
   const editor = editorPanel.getEditor();
 
   // Initialize file controller first
-  const fileController = new PatchController(editor, {
+  const patchController = new PatchController(editor, {
     onStatusUpdate: (msg, isError) => {
       updateStatus(msg, isError);
     },
@@ -303,7 +304,7 @@ solid(0, 0, 0)
       updateFileTitle();
     },
     onBeforeLoad: (_currentState) => {
-      const confirmed = window.confirm('Composer slot is modified.\n\nClick OK to overwrite.');
+      const confirmed = window.confirm('Patch is modified.\n\nClick OK to overwrite.');
       return confirmed ? 'discard' : 'cancel';
     },
     onAfterLoad: () => {
@@ -314,24 +315,13 @@ solid(0, 0, 0)
     },
   });
 
-  // Create state with getter properties for compatibility
   const state: ComposerState = {
     editorPanel,
     editor,
-    fileController,
+    patchController: patchController,
     statusElement,
     hydra: null,
     isActive: false,
-    get loadedFile() {
-      return fileController.getFilePath();
-    },
-    get isDirty() {
-      return fileController.isDirty();
-    },
-    get originalContent() {
-      // This is only used in a few places - return empty string for compatibility
-      return '';
-    },
   };
 
   composerState = state;
@@ -344,10 +334,10 @@ solid(0, 0, 0)
       run: () => {
         if (!composerState) return;
         const content = composerState.editor.getValue();
-        const filePath = composerState.fileController.getFilePath();
-        const fileName = composerState.fileController.getFileName();
-        const isDirty = composerState.fileController.isDirty();
-        const originalContent = composerState.fileController.getOriginalContent();
+        const filePath = composerState.patchController.getFilePath();
+        const fileName = composerState.patchController.getFileName();
+        const isDirty = composerState.patchController.isDirty();
+        const originalContent = composerState.patchController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('composer-open-in-performer', {
             detail: { content, target: 'A', filePath, fileName, isDirty, originalContent },
@@ -361,10 +351,10 @@ solid(0, 0, 0)
       run: () => {
         if (!composerState) return;
         const content = composerState.editor.getValue();
-        const filePath = composerState.fileController.getFilePath();
-        const fileName = composerState.fileController.getFileName();
-        const isDirty = composerState.fileController.isDirty();
-        const originalContent = composerState.fileController.getOriginalContent();
+        const filePath = composerState.patchController.getFilePath();
+        const fileName = composerState.patchController.getFileName();
+        const isDirty = composerState.patchController.isDirty();
+        const originalContent = composerState.patchController.getOriginalContent();
         window.dispatchEvent(
           new CustomEvent('composer-open-in-performer', {
             detail: { content, target: 'B', filePath, fileName, isDirty, originalContent },
@@ -391,7 +381,7 @@ solid(0, 0, 0)
 
   // File name click handler - reveal file in explorer
   document.getElementById('composer-file-name')?.addEventListener('click', () => {
-    const filePath = composerState?.fileController.getFilePath();
+    const filePath = composerState?.patchController.getFilePath();
     if (filePath) {
       window.dispatchEvent(
         new CustomEvent('reveal-file-in-explorer', {

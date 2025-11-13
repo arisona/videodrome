@@ -53,7 +53,6 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
   constructor(config: ExplorerConfig<T>) {
     this.config = config;
 
-    // Initialize DOM elements
     this.list = document.getElementById(config.listElementId) as HTMLUListElement;
     this.searchInput = document.getElementById(config.searchInputId) as HTMLInputElement;
     this.searchClearBtn = document.getElementById(config.searchClearBtnId) as HTMLButtonElement;
@@ -78,7 +77,6 @@ export abstract class ContentExplorerBase<T extends ExplorerItem> {
       this.debouncedSearch();
     });
 
-    // Clear button
     this.searchClearBtn.addEventListener('click', () => {
       this.clearSearch();
     });

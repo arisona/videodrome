@@ -91,9 +91,7 @@ export class PatchController {
    */
   public async save(): Promise<boolean> {
     if (!this.loadedFile) {
-      // No file loaded - can't save directly
-      // Caller should handle Save As through triggerSaveAs()
-      this.callbacks.onStatusUpdate('No file to save. Use Save As instead.', true);
+      // No file loaded - can't save directly and caller should use triggerSaveAs()
       return false;
     }
 
