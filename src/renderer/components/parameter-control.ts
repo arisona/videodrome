@@ -42,8 +42,8 @@ export interface StandaloneParameterControlConfig {
 const STEP_FRACTION = 0.1;
 const FINE_ADJUSTMENT_MULTIPLIER = 0.1;
 
-// Hover delay before showing (matches Monaco's default)
-export const HOVER_DELAY_MS = 300;
+// Hover delay before showing (matches Monaco's settings)
+export const HOVER_DELAY_MS = 800;
 // Auto-hide delay after mouse leaves the widget
 const HIDING_DELAY_MS = 1000;
 
@@ -176,11 +176,6 @@ export class StandaloneParameterControl {
     this.isInInputMode = false;
     display.style.display = 'block';
     input.style.display = 'none';
-
-    // Start auto-hide timer if mouse is outside the widget
-    if (!this.isMouseOver) {
-      this.startHidingTimer();
-    }
   }
 
   /**
@@ -440,13 +435,8 @@ export class StandaloneParameterControl {
         this.justFinishedDragging = false;
       }, 100);
 
-      // Start auto-hide timer if mouse is outside the widget
-      if (!this.isMouseOver) {
-        this.startHidingTimer();
-      }
-
       // Widget stays open - user can use arrow keys or wheel
-      // Will close on ESC or click outside
+      // Will close on ESC / Enter or click / move outside
     };
 
     const cleanup = () => {
@@ -574,11 +564,6 @@ export class StandaloneParameterControl {
         e.preventDefault();
         e.stopPropagation();
 
-        // Reset auto-hide timer on keyboard interaction
-        if (!this.isMouseOver) {
-          this.startHidingTimer();
-        }
-
         // Safety check - if currentValue is corrupted, reset to 0
         if (!isFinite(this.currentValue)) {
           this.currentValue = 0;
@@ -613,11 +598,6 @@ export class StandaloneParameterControl {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
-      // Reset auto-hide timer on wheel interaction
-      if (!this.isMouseOver) {
-        this.startHidingTimer();
-      }
 
       // Safety check - if currentValue is corrupted, reset to 0
       if (!isFinite(this.currentValue)) {

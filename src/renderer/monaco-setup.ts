@@ -6,7 +6,7 @@ const EDITOR_CONFIG = {
   LANGUAGE_ID: 'hydra',
   THEME: 'videodrome-dark',
   FONT_SIZE: 14,
-  HOVER_DELAY_MS: 300,
+  HOVER_DELAY_MS: 800,
 } as const;
 
 type MonacoGlobalScope = typeof self & {
@@ -303,6 +303,7 @@ export function createHydraEditor(options: EditorOptions): monaco.editor.IStanda
     readOnly,
     scrollBeyondLastLine: false,
     wordWrap: 'on',
+    occurrencesHighlight: 'off',
     quickSuggestions: readOnly
       ? false
       : {

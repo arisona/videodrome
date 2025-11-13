@@ -10,8 +10,8 @@ import { debounce } from '../../shared/debounce';
  * This custom implementation ensures tooltips always appear consistently.
  */
 
-const TOOLTIP_DELAY_MS = 500; // Delay before showing tooltip
-const TOOLTIP_OFFSET_X = 10; // Offset from cursor
+const TOOLTIP_DELAY_MS = 1000;
+const TOOLTIP_OFFSET_X = 10;
 const TOOLTIP_OFFSET_Y = 10;
 
 let tooltipElement: HTMLDivElement | null = null;

@@ -113,17 +113,10 @@ export class MonacoEditorPanel {
           e.preventDefault();
           e.stopPropagation();
 
-          const { range } = detection;
-
-          // Select the number
-          this.editor.setSelection(range);
-
           // showParameterControlAtCursor will automatically register with central registry
           showParameterControlAtCursor(this.editor, {
-            onUpdate: (_value, newRange) => {
+            onUpdate: (_value, _newRange) => {
               this.debouncedRun();
-              // Keep the number selected
-              this.editor.setSelection(newRange);
             },
             onCommit: () => {
               this.config.onRun();
@@ -132,9 +125,8 @@ export class MonacoEditorPanel {
             },
             onCancel: () => {
               this.config.onRun();
-              // Keep editor focused and restore selection
+              // Keep editor focused
               this.editor.focus();
-              this.editor.setSelection(range);
             },
           });
 
@@ -221,18 +213,13 @@ export class MonacoEditorPanel {
                 ? detectNumberAtPosition(editorModel, currentPosition)
                 : null;
               if (detectedNumber) {
-                const { range } = detectedNumber;
-
                 // Select the number
-                this.editor.setSelection(range);
                 this.editor.setPosition(currentPosition);
 
                 // showParameterControlAtCursor will automatically register with central registry
                 showParameterControlAtCursor(this.editor, {
-                  onUpdate: (_value, newRange) => {
+                  onUpdate: (_value, _newRange) => {
                     this.debouncedRun();
-                    // Keep the number selected
-                    this.editor.setSelection(newRange);
                   },
                   onCommit: () => {
                     this.config.onRun();
@@ -241,9 +228,8 @@ export class MonacoEditorPanel {
                   },
                   onCancel: () => {
                     this.config.onRun();
-                    // Keep editor focused and restore selection
+                    // Keep editor focused
                     this.editor.focus();
-                    this.editor.setSelection(range);
                   },
                 });
               }
