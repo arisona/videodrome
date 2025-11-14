@@ -9,7 +9,7 @@ import {
   assignHydraSource,
 } from './hydra/hydra-execution';
 
-import type { MediaType } from '../shared/types';
+import type { MediaType } from '../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
 // Sources tab state

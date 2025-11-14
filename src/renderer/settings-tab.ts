@@ -5,7 +5,7 @@ import { debounce } from '../shared/debounce';
 
 import { getSettings, getDefaultSettings, updateSettings } from './settings-service';
 
-import type { Settings } from '../shared/types';
+import type { Settings } from '../shared/ipc-types';
 
 const AUTO_SAVE_DEBOUNCE_MS = 500;
 

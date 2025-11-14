@@ -5,7 +5,7 @@ import { app } from 'electron';
 
 import { APP_CONFIG } from '../shared/constants';
 
-import type { Settings } from '../shared/types';
+import type { Settings } from '../shared/ipc-types';
 
 function getSettingsPath(): string {
   const userDataPath = app.getPath('userData');

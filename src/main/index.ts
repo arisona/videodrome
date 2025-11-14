@@ -11,7 +11,7 @@ import { scanDirectory } from './utils/file-scanning';
 import { collectMediaFiles } from './utils/media';
 import { isPathWithinRoot, isValidName, safeJoin } from './utils/path-security';
 
-import type { ResultsPayload, Settings } from '../shared/types';
+import type { ResultsPayload, Settings } from '../shared/ipc-types';
 
 const EDITOR_WINDOW_WIDTH = 1200;
 const EDITOR_WINDOW_HEIGHT = 800;

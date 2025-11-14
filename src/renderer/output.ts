@@ -6,7 +6,12 @@ import { getCompositeFunction } from '../shared/composite-functions';
 
 import { executeInHydraContext, assignHydraSource } from './hydra/hydra-execution';
 
-import type { ExecutionPayload, ResultsPayload, MediaType, PreviewFrame } from '../shared/types';
+import type {
+  ExecutionPayload,
+  ResultsPayload,
+  MediaType,
+  PreviewFrame,
+} from '../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
 // Define frame size and fps of stream sent to editor for preview (fixed 16:9)

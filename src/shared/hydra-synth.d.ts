@@ -1,6 +1,27 @@
-// Minimal type declarations for 'hydra-synth'
-// These cover only the APIs directly used in TypeScript code.
-// User code passed as strings has access to the full Hydra API at runtime.
+/**
+ * Type definitions for the 'hydra-synth' npm package
+ *
+ * PURPOSE:
+ * Provides TypeScript types for programmatic usage of Hydra instances in application code.
+ * This includes creating Hydra instances, accessing instance properties, and managing sources.
+ *
+ * SCOPE:
+ * - Covers ONLY the APIs used directly in TypeScript code (Hydra class, synth object, sources)
+ * - Does NOT provide types for user-facing Hydra functions (osc, noise, shape, etc.)
+ * - User code is executed as strings and has access to the full Hydra runtime API
+ *
+ * RELATIONSHIP TO OTHER FILES:
+ * - This file: Runtime instance types for programmatic Hydra usage
+ * - renderer/hydra/hydra-globals.d.ts: Ambient types for Monaco editor IntelliSense
+ * - renderer/hydra/hydra-execution.ts: Runtime utilities for executing user code
+ *
+ * WHEN TO IMPORT:
+ * Import from this file when you need:
+ * - The Hydra class constructor (default import)
+ * - HydraSourceSlot type for s0-s3 references
+ * - Types for Hydra instance properties (synth, setResolution, etc.)
+ * - Interfaces for Hydra's internal objects (HydraSource, HydraAudioAnalyser, etc.)
+ */
 
 declare module 'hydra-synth' {
   export interface HydraOptions {

@@ -1,6 +1,6 @@
 /* eslint-env browser */
 
-import type { MediaFile, MediaType } from '../../shared/types';
+import type { MediaFile, MediaType } from '../../shared/ipc-types';
 
 const PREVIEW_HEIGHT = 48;
 const PREVIEW_WIDTH = 80;

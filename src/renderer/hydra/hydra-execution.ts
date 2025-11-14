@@ -1,13 +1,32 @@
 /* eslint-env browser */
 
 /**
- * Hydra execution utilities
- * Provides functions for executing code in Hydra contexts
+ * Hydra Runtime Execution Utilities
+ *
+ * PURPOSE:
+ * Provides runtime utilities for executing user-written Hydra patches and managing Hydra instances.
+ * This module bridges between the TypeScript application and Hydra's dynamic runtime environment.
+ *
+ * KEY FUNCTIONS:
+ * - executeInHydraContext: Executes code strings with access to Hydra's global API
+ * - assignHydraSource: Assigns media (images, videos, GIFs) to source slots (s0-s3)
+ * - cleanupHydraInstance: Safely disposes Hydra instances and cleans up resources
+ *
+ * HOW IT WORKS:
+ * - Uses `new Function()` to create executable code with Hydra globals in scope
+ * - Manually injects 26+ Hydra symbols (osc, noise, s0-s3, o0-o3, mouse, etc.) as parameters
+ * - Enables user code written as strings to access the full Hydra API at runtime
+ *
+ * RELATIONSHIP TO OTHER FILES:
+ * - This file: Runtime execution utilities (implementation)
+ * - shared/hydra-synth.d.ts: Types for Hydra instances and sources
+ * - hydra-globals.d.ts: Types for Monaco IntelliSense (describes the API this file provides)
+ * - hydra-gif.ts: Specialized GIF handling (used internally by assignHydraSource)
  */
 
 import { initGifSource } from './hydra-gif';
 
-import type { MediaType } from '../../shared/types';
+import type { MediaType } from '../../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 import type Hydra from 'hydra-synth';
 

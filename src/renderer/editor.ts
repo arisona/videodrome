@@ -34,7 +34,7 @@ import {
 import { getFilename } from './utils/path';
 import { applyShortcutTooltips } from './utils/shortcuts';
 
-import type { MediaType } from '../shared/types';
+import type { MediaType } from '../shared/ipc-types';
 
 // Configure Monaco environment once
 configureMonacoEnvironment();

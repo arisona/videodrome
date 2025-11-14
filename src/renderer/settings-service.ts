@@ -4,7 +4,7 @@ import * as path from 'path-browserify';
 
 import { APP_CONFIG, DEFAULT_SETTINGS } from '../shared/constants';
 
-import type { Settings } from '../shared/types';
+import type { Settings } from '../shared/ipc-types';
 
 /**
  * Settings Service

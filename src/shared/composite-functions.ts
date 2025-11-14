@@ -1,4 +1,4 @@
-import type { CompositeFunction } from './types';
+import type { CompositeFunction } from './ipc-types';
 
 /**
  * Composite Functions Library for Hydra

@@ -1,5 +1,35 @@
 /* eslint-env browser */
 
+/**
+ * Hydra GIF Animation Support
+ *
+ * PURPOSE:
+ * Provides specialized handling for animated GIF files in Hydra source slots.
+ * Hydra's native `initImage()` and `initVideo()` don't handle GIF animations properly,
+ * so this module uses the ImageDecoder API to decode and animate GIFs frame-by-frame.
+ *
+ * KEY FEATURES:
+ * - Decodes GIF frames using the browser's ImageDecoder API
+ * - Respects frame timing and durations for proper playback
+ * - Manages animation loops and cleanup
+ * - Uses hidden canvas elements for frame rendering
+ *
+ * USAGE:
+ * This module is used internally by hydra-execution.ts when assigning GIF media to sources.
+ * It's not directly imported by application code outside the hydra/ directory.
+ *
+ * RELATIONSHIP TO OTHER FILES:
+ * - This file: Specialized GIF handling implementation
+ * - hydra-execution.ts: Calls initGifSource() when media type is 'gif'
+ * - shared/hydra-synth.d.ts: Provides HydraSourceSlot and Hydra types
+ *
+ * TECHNICAL NOTES:
+ * - Uses ImageDecoder (modern browser API) for GIF frame extraction
+ * - Creates a hidden canvas to render each frame
+ * - Initializes Hydra source with canvas using .init({ src: canvas, dynamic: true })
+ * - Tracks active GIF sources for proper cleanup and memory management
+ */
+
 import type { HydraSourceSlot } from 'hydra-synth';
 import type Hydra from 'hydra-synth';
 

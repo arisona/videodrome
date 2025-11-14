@@ -25,7 +25,7 @@ import type {
   ResultsPayload,
   PreviewFrame,
   PatchExecutionResult,
-} from '../shared/types';
+} from '../shared/ipc-types';
 
 const MARKER_OWNER = 'hydra-performer';
 const MODAL_HOVER_DELAY_MS = 1000;

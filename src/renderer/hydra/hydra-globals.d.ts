@@ -1,6 +1,30 @@
-// Hydra Synth Global Type Definitions
-// TypeScript ambient declarations for Hydra visual synthesis
-// Based on: https://hydra.ojack.xyz/api/
+/**
+ * Hydra Global API Type Definitions for Monaco Editor IntelliSense
+ *
+ * PURPOSE:
+ * Provides complete ambient type definitions for Hydra's user-facing global API.
+ * These types enable autocomplete, hover documentation, and parameter hints in Monaco editor
+ * when users write Hydra patches.
+ *
+ * IMPORTANT:
+ * - This file is NOT imported as TypeScript types
+ * - It's loaded as RAW TEXT via monaco-setup.ts and injected into Monaco's language service
+ * - The types exist only in Monaco's virtual environment, not in the application's type system
+ *
+ * SCOPE:
+ * - Complete user-facing Hydra API: osc(), noise(), shape(), gradient(), etc.
+ * - All chainable Source methods: geometry, color, blend, modulate operations
+ * - Global constants: s0-s3 (sources), o0-o3 (outputs), time, mouse, bpm, etc.
+ * - Array extensions for modulation: .fast(), .smooth(), .ease(), etc.
+ *
+ * RELATIONSHIP TO OTHER FILES:
+ * - This file: Ambient types for user code IntelliSense (Monaco only)
+ * - shared/hydra-synth.d.ts: Runtime instance types for programmatic usage
+ * - hydra-execution.ts: Runtime utilities that execute user code with these globals
+ *
+ * REFERENCE:
+ * Based on Hydra API documentation: https://hydra.ojack.xyz/api/
+ */
 
 /**
  * Number type for Hydra parameters
@@ -414,12 +438,15 @@ interface Source {
 
 /**
  * Output buffer interface
- * Can be used as a source via src()
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Output {
-  // Output buffers can be sampled as sources
-}
+interface Output {}
+
+/**
+ * Texture interface
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface Texture {}
 
 /**
  * Mouse position interface
@@ -541,16 +568,16 @@ declare function shape(sides?: _number, radius?: _number, smoothing?: _number): 
 declare function gradient(speed?: _number): Source;
 
 /**
- * External source sampler
+ * External texture sampler
  *
  * Samples from an external source (s0-s3) or output buffer (o0-o3).
- * @param source Source to sample (default: o0)
+ * @param source Texture to sample (default: o0)
  * @example
  * src(o0).out()
  * @example
  * src(s0).out()
  */
-declare function src(source?: Source): Source;
+declare function src(texture?: Texture): Source;
 
 /**
  * Solid color source
@@ -587,49 +614,40 @@ declare function render(source?: Output): void;
 // === GLOBAL VARIABLES ===
 
 /**
- * External input source 0
+ * Input source 0
  *
- * Texture input slot for external sources (webcam, video, canvas, image).
- * Initialize with s0.initCam(), s0.initVideo(), s0.initImage(), or s0.init().
- * @example
- * s0.initCam()
+ * Texture input slot 0 for external sources.
  * @example
  * src(s0).out()
  */
-declare const s0: Source;
+declare const s0: Texture;
 
 /**
- * External input source 1
+ * Input source 1
  *
- * Texture input slot for external sources. Second independent input.
- * @example
- * s1.initVideo("video.mp4")
+ * Texture input slot 1 for external sources.
  * @example
  * src(s1).out()
  */
-declare const s1: Source;
+declare const s1: Texture;
 
 /**
- * External input source 2
+ * Input source 2
  *
- * Texture input slot for external sources. Third independent input.
- * @example
- * s2.initImage("image.jpg")
+ * Texture input slot 2 for external sources.
  * @example
  * src(s2).out()
  */
-declare const s2: Source;
+declare const s2: Texture;
 
 /**
- * External input source 3
+ * Input source 3
  *
- * Texture input slot for external sources. Fourth independent input.
- * @example
- * s3.init({src: canvas})
+ * Texture input slot 3 for external sources.
  * @example
  * src(s3).out()
  */
-declare const s3: Source;
+declare const s3: Texture;
 
 /**
  * Output buffer 0 (default)
@@ -641,7 +659,7 @@ declare const s3: Source;
  * @example
  * src(o0).blend(osc(), 0.5).out()
  */
-declare const o0: Output & Source;
+declare const o0: Output & Source & Texture;
 
 /**
  * Output buffer 1
@@ -652,7 +670,7 @@ declare const o0: Output & Source;
  * @example
  * src(o1).kaleid(4).out()
  */
-declare const o1: Output & Source;
+declare const o1: Output & Source & Texture;
 
 /**
  * Output buffer 2
@@ -663,7 +681,7 @@ declare const o1: Output & Source;
  * @example
  * src(o2).add(osc()).out()
  */
-declare const o2: Output & Source;
+declare const o2: Output & Source & Texture;
 
 /**
  * Output buffer 3
@@ -674,7 +692,7 @@ declare const o2: Output & Source;
  * @example
  * src(o3).modulateRotate(noise()).out()
  */
-declare const o3: Output & Source;
+declare const o3: Output & Source & Texture;
 
 /**
  * Elapsed time in seconds since start

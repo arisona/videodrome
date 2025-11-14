@@ -122,16 +122,12 @@ export interface ElectronAPI {
   isPreviewPortReady: () => boolean;
   sendExecutionResults: (results: ResultsPayload) => void;
   onExecutionResults: (callback: (results: ResultsPayload) => void) => void;
-  setHydraSource: (
-    sourceSlot: HydraSourceSlot,
-    mediaUrl: string,
-    mediaType: HydraMediaType,
-  ) => void;
+  setHydraSource: (sourceSlot: HydraSourceSlot, mediaUrl: string, mediaType: MediaType) => void;
   onSetHydraSource: (
     callback: (data: {
       sourceSlot: HydraSourceSlot;
       mediaUrl: string;
-      mediaType: HydraMediaType;
+      mediaType: MediaType;
     }) => void,
   ) => void;
   // Media explorer APIs

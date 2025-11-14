@@ -9,7 +9,7 @@ import type {
   PreviewFrame,
   ResultsPayload,
   Settings,
-} from '../shared/types';
+} from '../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
 let previewPort: MessagePort | null = null;

@@ -5,7 +5,7 @@ import { getDirectoryFromPath } from '../utils/path';
 
 import { ContentExplorerBase, type ExplorerConfig } from './content-explorer-base';
 
-import type { PatchFile } from '../../shared/types';
+import type { PatchFile } from '../../shared/ipc-types';
 
 const INPUT_BLUR_DELAY_MS = 200;
 

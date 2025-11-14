@@ -14,7 +14,7 @@ import {
 } from './hydra/hydra-execution';
 import { requireElementById } from './utils/dom';
 
-import type { MediaType } from '../shared/types';
+import type { MediaType } from '../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
 const MARKER_OWNER = 'hydra-composer';

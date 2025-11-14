@@ -3,7 +3,7 @@
 import { ContentExplorerBase, type ExplorerConfig } from './content-explorer-base';
 import { PreviewGenerator } from './preview-generator';
 
-import type { MediaFile, MediaType } from '../../shared/types';
+import type { MediaFile, MediaType } from '../../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
 // Callbacks for media actions

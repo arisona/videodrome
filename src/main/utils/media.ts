@@ -9,7 +9,7 @@ import {
 
 import { createDirectorySkipFilter, createExtensionFilter, scanDirectory } from './file-scanning';
 
-import type { MediaFile, MediaType } from '../../shared/types';
+import type { MediaFile, MediaType } from '../../shared/ipc-types';
 
 export function getMediaType(fileName: string): MediaType | null {
   const ext = path.extname(fileName).toLowerCase();
