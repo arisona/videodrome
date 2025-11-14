@@ -72,6 +72,15 @@ export class ParameterControlWidget implements monaco.editor.IContentWidget {
     return this.currentRange;
   }
 
+  public focus(): void {
+    this.standaloneControl.focus();
+  }
+
+  public isDisposed(): boolean {
+    const domNode = this.standaloneControl.getDomNode();
+    return !domNode || !document.contains(domNode);
+  }
+
   // IContentWidget interface
   getId(): string {
     return this.id;
@@ -138,7 +147,6 @@ export function detectNumberAtPosition(
       return { value, range };
     }
   }
-
   return null;
 }
 
@@ -185,6 +193,9 @@ export function showParameterControlAtCursor(
       if (config.onUpdate) {
         config.onUpdate(newValue, currentRange);
       }
+
+      // Refocus the widget
+      widget.focus();
     },
     onCommit: (finalValue) => {
       // Final value is already in the editor from onUpdate
@@ -205,9 +216,18 @@ export function showParameterControlAtCursor(
       if (config.onCancel) {
         config.onCancel();
       }
+
+      // Refocus the widget
+      widget.focus();
     },
   });
 
   editor.addContentWidget(widget);
+
+  // Focus the widget delayed to be after Monaco's own focus handling
+  setTimeout(() => {
+    widget.focus();
+  }, 20);
+
   return widget;
 }

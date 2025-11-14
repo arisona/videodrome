@@ -90,7 +90,6 @@ export class StandaloneParameterControl {
   // Auto-hide timer and mouse tracking
   private hidingTimer: ReturnType<typeof setTimeout> | null = null;
   private isMouseOver = false; // Track if mouse is currently over the widget
-  private hasMouseMovedSinceShown = false; // Track if mouse has moved since widget was shown
 
   // Store event handlers so we can remove them
   private handleKeyDown!: (e: KeyboardEvent) => void;
@@ -117,6 +116,9 @@ export class StandaloneParameterControl {
   private createDomNode(): void {
     const node = document.createElement('div');
     node.className = 'parameter-control-widget';
+
+    // Make the widget focusable so it can take focus
+    node.tabIndex = -1;
 
     // Display area
     const display = document.createElement('div');
@@ -215,11 +217,12 @@ export class StandaloneParameterControl {
 
       // Check if the DOM node has been attached to the document
       if (this.domNode.isConnected) {
+        this.domNode.focus();
+
         // Wait a bit for mouseenter event to fire if the mouse is over the widget
         setTimeout(() => {
           // Set up a one-time mouse move handler to detect when the user moves the mouse
           this.handleFirstMouseMove = () => {
-            this.hasMouseMovedSinceShown = true;
             // Remove this one-time handler
             document.removeEventListener('mousemove', this.handleFirstMouseMove);
 
@@ -762,6 +765,15 @@ export class StandaloneParameterControl {
   }
 
   /**
+   * Focus the widget (to steal focus from editor or other elements)
+   */
+  focus(): void {
+    if (this.domNode?.isConnected) {
+      this.domNode.focus();
+    }
+  }
+
+  /**
    * Attach the widget to a parent element at a specific position
    */
   attachTo(parent: HTMLElement, x: number, y: number): void {
@@ -774,8 +786,7 @@ export class StandaloneParameterControl {
 
     parent.appendChild(this.domNode);
 
-    // Auto-hide timer will be started by startInitialAutoHideCheck()
-    // which is called from the constructor
+    this.domNode.focus();
   }
 
   /**

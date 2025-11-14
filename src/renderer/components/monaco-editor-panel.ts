@@ -114,19 +114,27 @@ export class MonacoEditorPanel {
           e.stopPropagation();
 
           // showParameterControlAtCursor will automatically register with central registry
-          showParameterControlAtCursor(this.editor, {
+          const widget = showParameterControlAtCursor(this.editor, {
             onUpdate: (_value, _newRange) => {
               this.debouncedRun();
             },
             onCommit: () => {
               this.config.onRun();
-              // Keep editor focused
-              this.editor.focus();
+              // Only refocus editor if widget is actually disposed (not just after drag)
+              setTimeout(() => {
+                if (widget?.isDisposed()) {
+                  this.editor.focus();
+                }
+              }, 0);
             },
             onCancel: () => {
               this.config.onRun();
-              // Keep editor focused
-              this.editor.focus();
+              // Only refocus editor if widget is actually disposed
+              setTimeout(() => {
+                if (widget?.isDisposed()) {
+                  this.editor.focus();
+                }
+              }, 0);
             },
           });
 
@@ -177,6 +185,11 @@ export class MonacoEditorPanel {
    */
   private setupHoverBehavior(): void {
     const mouseMoveDisposable = this.editor.onMouseMove((e) => {
+      // Ignore if any mouse buttons are pressed
+      if (e.event.buttons !== 0) {
+        return;
+      }
+
       // Clear any existing hover timer
       if (this.hoverTimer) {
         clearTimeout(this.hoverTimer);
@@ -204,9 +217,6 @@ export class MonacoEditorPanel {
               this.lastHoverPosition.lineNumber === currentPosition.lineNumber &&
               this.lastHoverPosition.column === currentPosition.column
             ) {
-              // Focus the editor first
-              this.editor.focus();
-
               // Detect the number and its range
               const editorModel = this.editor.getModel();
               const detectedNumber = editorModel
@@ -217,19 +227,28 @@ export class MonacoEditorPanel {
                 this.editor.setPosition(currentPosition);
 
                 // showParameterControlAtCursor will automatically register with central registry
-                showParameterControlAtCursor(this.editor, {
+                // and handle focusing after Monaco operations
+                const widget = showParameterControlAtCursor(this.editor, {
                   onUpdate: (_value, _newRange) => {
                     this.debouncedRun();
                   },
                   onCommit: () => {
                     this.config.onRun();
-                    // Keep editor focused
-                    this.editor.focus();
+                    // Only refocus editor if widget is actually disposed (not just after drag)
+                    setTimeout(() => {
+                      if (widget?.isDisposed()) {
+                        this.editor.focus();
+                      }
+                    }, 0);
                   },
                   onCancel: () => {
                     this.config.onRun();
-                    // Keep editor focused
-                    this.editor.focus();
+                    // Only refocus editor if widget is actually disposed
+                    setTimeout(() => {
+                      if (widget?.isDisposed()) {
+                        this.editor.focus();
+                      }
+                    }, 0);
                   },
                 });
               }
