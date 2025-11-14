@@ -20,4 +20,5 @@ export default defineConfig({
       '../shared': resolve(__dirname, 'src/shared'),
     },
   },
+  plugins: [],
 });

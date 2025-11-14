@@ -18,15 +18,9 @@ import {
   setSource as setSourceInComposer,
 } from './composer-tab';
 import {
-  registerHydraCompletionProvider,
-  registerHydraSignatureHelpProvider,
-  registerHydraHoverProvider,
-  registerHydraDetailedDocsCommand,
-} from './hydra/hydra-intellisense';
-import {
   configureMonacoEnvironment,
-  registerHydraLanguage,
   defineVideodromeTheme,
+  registerHydraTypeDefinitions,
 } from './monaco-setup';
 import { initPerformer, showPerformer, hidePerformer, getPerformerState } from './performer-tab';
 import { initSettingsService, getSettings } from './settings-service';
@@ -44,16 +38,11 @@ import type { MediaType } from '../shared/types';
 
 // Configure Monaco environment once
 configureMonacoEnvironment();
-registerHydraLanguage();
 defineVideodromeTheme();
 
-// Register global Hydra language providers once
-// NOTE: These are global providers for the 'hydra' language and apply to all editors
-// They should only be registered once to avoid duplicate completions
-registerHydraCompletionProvider();
-registerHydraSignatureHelpProvider();
-registerHydraHoverProvider();
-registerHydraDetailedDocsCommand();
+// Register Hydra type definitions with TypeScript language service
+// This provides IntelliSense for all Hydra functions and globals
+registerHydraTypeDefinitions();
 
 // Current main tab
 type MainTab = 'compose' | 'perform' | 'sources' | 'settings';

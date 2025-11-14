@@ -126,6 +126,13 @@ export function detectNumberAtPosition(
 
       if (isNaN(value)) continue;
 
+      // Check if this number is part of an array index (e.g., arr[123] or arr[ 123 ])
+      // Test if there's a '[' before the number (ignoring whitespace)
+      const beforeNumber = line.substring(0, match.index);
+      if (/\[\s*$/.test(beforeNumber)) {
+        continue; // Skip array indices
+      }
+
       const range = new monaco.Range(position.lineNumber, startCol, position.lineNumber, endCol);
 
       return { value, range };
