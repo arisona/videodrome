@@ -5,6 +5,11 @@ import * as monaco from 'monaco-editor';
 
 import { STATUS_MESSAGES } from '../shared/constants';
 
+import {
+  applyToHydraInstance,
+  addAudioDrawerListener,
+  removeAudioDrawerListener,
+} from './components/audio-drawer';
 import { PatchPanel } from './components/patch-panel';
 import { getGlobalSources } from './editor';
 import {
@@ -28,6 +33,11 @@ interface ComposerState {
 
 let composerState: ComposerState | null = null;
 
+// Listener for audio settings changes
+let audioSettingsListener:
+  | ((params: { smooth: number; scale: number; cutoff: number }) => void)
+  | null = null;
+
 // Initialize Hydra instance
 function initHydra() {
   if (!composerState) return;
@@ -46,6 +56,19 @@ function initHydra() {
 
   // Apply global sources to this Hydra instance
   reapplyGlobalSources();
+
+  // Apply current audio settings to this Hydra instance
+  applyToHydraInstance(composerState.hydra);
+
+  // Register listener for future audio drawer changes
+  audioSettingsListener = (params) => {
+    if (composerState?.hydra) {
+      composerState.hydra.synth.a.setSmooth(params.smooth);
+      composerState.hydra.synth.a.setScale(params.scale);
+      composerState.hydra.synth.a.setCutoff(params.cutoff);
+    }
+  };
+  addAudioDrawerListener(audioSettingsListener);
 }
 
 function resizeCanvas() {
@@ -109,6 +132,12 @@ function cleanupHydra() {
   ) as HTMLCanvasElement;
   cleanupHydraInstance(composerState.hydra, previewCanvas);
   composerState.hydra = null;
+
+  // Unregister audio drawer listener
+  if (audioSettingsListener) {
+    removeAudioDrawerListener(audioSettingsListener);
+    audioSettingsListener = null;
+  }
 }
 
 function executeHydraCode(code: string) {

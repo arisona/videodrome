@@ -2,6 +2,12 @@
 
 import type { HydraSourceSlot } from 'hydra-synth';
 
+export interface AudioAnalyzerParams {
+  smooth: number;
+  scale: number;
+  cutoff: number;
+}
+
 export interface Settings {
   patchDirectory: string;
   mediaDirectory: string;
@@ -12,6 +18,7 @@ export interface Settings {
     mouseDragLock: boolean;
   };
   intellisenseEnabled: boolean;
+  audioDrawerOpen?: boolean;
 }
 
 export interface PatchFile {
@@ -130,6 +137,9 @@ export interface ElectronAPI {
       mediaType: MediaType;
     }) => void,
   ) => void;
+  // Audio analyzer API
+  setAudioAnalyzerParams: (params: AudioAnalyzerParams) => void;
+  onSetAudioAnalyzerParams: (callback: (params: AudioAnalyzerParams) => void) => void;
   // Media explorer APIs
   listMedia: () => Promise<Array<MediaFile>>;
   onMediaChanged: (callback: (media: Array<MediaFile>) => void) => void;

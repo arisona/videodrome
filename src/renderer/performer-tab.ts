@@ -10,14 +10,8 @@ import { STATUS_MESSAGES } from '../shared/constants';
 import { debounce, type DebouncedFunction } from '../shared/debounce';
 
 import { showDocumentationModal } from './components/modal';
-import {
-  StandaloneParameterControl,
-  registerParameterControl,
-  disposeActiveParameterControl,
-  HOVER_DELAY_MS,
-} from './components/parameter-control';
 import { PatchPanel } from './components/patch-panel';
-import { getSettings } from './settings-service';
+import { SliderControl } from './components/slider-control';
 import { requireElementById } from './utils/dom';
 
 import type {
@@ -53,6 +47,9 @@ let performerState: {
   previewContextA: null,
   previewContextB: null,
 };
+
+// Slider control instances for compositor parameters (6 slots)
+const paramSliderControls: Array<SliderControl | null> = [null, null, null, null, null, null];
 
 function swapPerformerPatches(): void {
   if (!performerState.panelA || !performerState.panelB) return;
@@ -215,66 +212,6 @@ function showCompositeFunctionDocs(compositeFuncId: string) {
   showDocumentationModal(markdown);
 }
 
-// Setup hover on label to show parameter control widget
-function setupLabelHover(
-  labelElement: HTMLElement,
-  param: { min: number; max: number; default: number; label: string; key: string; step?: number },
-  updateValue: (value: number) => void,
-) {
-  // Store current value for this parameter
-  const getCurrentValue = () => {
-    return performerState.compositeParams[param.key] ?? param.default;
-  };
-
-  const showWidget = () => {
-    if (!getSettings().parameterControl.enabled) {
-      return;
-    }
-
-    const currentValue = getCurrentValue();
-
-    // Create the parameter control widget
-    const widget = new StandaloneParameterControl(currentValue, {
-      min: param.min,
-      max: param.max,
-      default: param.default,
-      onUpdate: (value: number) => {
-        updateValue(value);
-        sendToOutputWindow();
-      },
-      onCommit: (value: number) => {
-        updateValue(value);
-        sendToOutputWindow();
-      },
-      onCancel: () => {
-        // Restore previous value
-        updateValue(currentValue);
-        sendToOutputWindow();
-      },
-    });
-
-    // Position the widget near the label
-    const rect = labelElement.getBoundingClientRect();
-    const compositorBar = document.getElementById('editor-performer-compositor-bar');
-    if (compositorBar && widget.getDomNode()) {
-      widget.attachTo(compositorBar, rect.left, rect.top - 120); // Position above the label
-    }
-
-    // Register this widget in the central registry (will auto-dispose any previous widget)
-    registerParameterControl(widget);
-  };
-
-  const debouncedShowWidget: DebouncedFunction<() => void> = debounce(showWidget, HOVER_DELAY_MS);
-
-  labelElement.addEventListener('mouseenter', () => {
-    debouncedShowWidget();
-  });
-
-  labelElement.addEventListener('mouseleave', () => {
-    debouncedShowWidget.cancel();
-  });
-}
-
 // Update parameter slots based on composite mode
 function updateParamSlots(compositeModeId: string) {
   const compositeFunc = getCompositeFunction(compositeModeId);
@@ -282,131 +219,61 @@ function updateParamSlots(compositeModeId: string) {
   // Clear existing params
   performerState.compositeParams = {};
 
+  // Get compositor bar for widget attachment
+  const compositorBar = document.getElementById('editor-performer-compositor-bar');
+  if (!compositorBar) return;
+
   // For each of the 6 param slots
   for (let i = 1; i <= 6; i++) {
+    const slotIndex = i - 1; // Array index
     const slotElement = document.getElementById(`param-slot-${String(i)}`);
-    const labelElement = document.getElementById(`param-${String(i)}-label`);
-    const sliderElement = document.getElementById(
-      `param-${String(i)}-slider`,
-    ) as HTMLInputElement | null;
 
-    if (!slotElement || !labelElement || !sliderElement) continue;
+    if (!slotElement) continue;
+
+    // Destroy existing slider control if any
+    if (paramSliderControls[slotIndex]) {
+      paramSliderControls[slotIndex].destroy();
+      paramSliderControls[slotIndex] = null;
+    }
+
+    // Clear slot content
+    slotElement.innerHTML = '';
 
     // Check if composite function has a parameter at this index
-    const param = compositeFunc?.params[i - 1];
+    const param = compositeFunc?.params[slotIndex];
 
     if (param) {
       // Activate and configure this param slot
       slotElement.classList.add('active');
-      sliderElement.disabled = false;
-      sliderElement.min = String(param.min);
-      sliderElement.max = String(param.max);
-      sliderElement.step = String(param.step ?? 0.01);
-      sliderElement.value = String(param.default);
 
-      // Update label with value
+      // Calculate decimals for display
       const decimals = param.step && param.step < 0.01 ? 3 : param.step && param.step < 0.1 ? 2 : 1;
 
-      // Function to update value and check range
-      const updateValue = (value: number) => {
-        performerState.compositeParams[param.key] = value;
-        labelElement.textContent = `${param.label}: ${value.toFixed(decimals)}`;
-
-        // Check if value is out of range
-        if (value < param.min || value > param.max) {
-          sliderElement.classList.add('out-of-range');
-          // Clamp slider position to min or max
-          if (value < param.min) {
-            sliderElement.value = String(param.min);
-          } else {
-            sliderElement.value = String(param.max);
-          }
-        } else {
-          sliderElement.classList.remove('out-of-range');
-          sliderElement.value = String(value);
-        }
-      };
-
-      // Initialize state
-      updateValue(param.default);
-
-      // Wire up slider event listener
-      sliderElement.oninput = () => {
-        const value = Number.parseFloat(sliderElement.value);
-        updateValue(value);
-        sendToOutputWindow();
-      };
-
-      // Close any active parameter control widget when user grabs the slider
-      sliderElement.onmousedown = () => {
-        disposeActiveParameterControl();
-      };
-
-      // Keyboard handler for slider
-      sliderElement.onkeydown = (e) => {
-        // Shift+Enter - Open parameter control
-        if (e.shiftKey && e.key === 'Enter') {
-          e.preventDefault();
-          e.stopPropagation();
-
-          const currentValue = performerState.compositeParams[param.key] ?? param.default;
-
-          // Create the parameter control widget
-          const widget = new StandaloneParameterControl(currentValue, {
-            min: param.min,
-            max: param.max,
-            default: param.default,
-            onUpdate: (value: number) => {
-              updateValue(value);
-              sendToOutputWindow();
-            },
-            onCommit: (value: number) => {
-              updateValue(value);
-              sendToOutputWindow();
-            },
-            onCancel: () => {
-              // Restore previous value
-              updateValue(currentValue);
-              sendToOutputWindow();
-            },
-          });
-
-          // Position the widget near the slider
-          const rect = sliderElement.getBoundingClientRect();
-          const compositorBar = document.getElementById('editor-performer-compositor-bar');
-          if (compositorBar && widget.getDomNode()) {
-            widget.attachTo(compositorBar, rect.left, rect.top - 120); // Position above the slider
-          }
-
-          // Register this widget in the central registry
-          registerParameterControl(widget);
-        }
-
-        // Backspace - Restore default value
-        if (e.key === 'Backspace') {
-          e.preventDefault();
-          e.stopPropagation();
-          updateValue(param.default);
+      // Create slider control
+      paramSliderControls[slotIndex] = new SliderControl(slotElement, {
+        label: param.label,
+        min: param.min,
+        max: param.max,
+        step: param.step ?? 0.01,
+        defaultValue: param.default,
+        decimals,
+        attachmentContainer: compositorBar,
+        widgetGap: 8,
+        onUpdate: (value: number) => {
+          performerState.compositeParams[param.key] = value;
           sendToOutputWindow();
-        }
-      };
+        },
+        onCommit: (value: number) => {
+          performerState.compositeParams[param.key] = value;
+          sendToOutputWindow();
+        },
+      });
 
-      // Setup hover on label to show parameter control
-      setupLabelHover(labelElement, param, updateValue);
+      // Initialize state with default value
+      performerState.compositeParams[param.key] = param.default;
     } else {
       // Deactivate this param slot
       slotElement.classList.remove('active');
-      labelElement.textContent = `Param ${String(i)}`;
-      sliderElement.disabled = true;
-      sliderElement.value = '0';
-      sliderElement.classList.remove('out-of-range');
-      sliderElement.oninput = null;
-      sliderElement.onmousedown = null;
-      sliderElement.onkeydown = null;
-
-      // Remove any existing hover listeners
-      const oldElement = labelElement.cloneNode(true);
-      labelElement.parentNode?.replaceChild(oldElement, labelElement);
     }
   }
 }

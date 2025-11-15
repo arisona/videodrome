@@ -2,6 +2,7 @@
 
 import { FILE_EXTENSIONS } from '../shared/constants';
 
+import { initAudioDrawer } from './components/audio-drawer';
 import { initMediaExplorer, loadMedia } from './components/media-explorer';
 import {
   initPatchExplorer,
@@ -651,6 +652,9 @@ void (async () => {
   initPerformer();
   initSources();
   initSettings(loadPatches, loadMedia);
+
+  // Initialize audio drawer
+  initAudioDrawer();
 
   // Initialize patch explorer with callbacks
   initPatchExplorer({

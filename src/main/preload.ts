@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { IPC_CHANNELS } from '../shared/constants';
 
 import type {
+  AudioAnalyzerParams,
   MediaFile,
   MediaType,
   PatchFile,
@@ -179,6 +180,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
         'mediaType' in data
       ) {
         callback(data as { sourceSlot: HydraSourceSlot; mediaUrl: string; mediaType: MediaType });
+      }
+    });
+  },
+  setAudioAnalyzerParams: (params: AudioAnalyzerParams) => {
+    ipcRenderer.send(IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS, params);
+  },
+  onSetAudioAnalyzerParams: (callback: (params: AudioAnalyzerParams) => void) => {
+    ipcRenderer.on(IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS, (_event, params) => {
+      if (
+        typeof params === 'object' &&
+        params !== null &&
+        'smooth' in params &&
+        'scale' in params &&
+        'cutoff' in params
+      ) {
+        callback(params as AudioAnalyzerParams);
       }
     });
   },

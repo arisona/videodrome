@@ -469,27 +469,31 @@ interface AudioAnalyzer {
 
   /**
    * Sets the number of FFT frequency bins (default: 4)
+   * @deprecated This method should not be used in Videodrome.
    * @param bins Number of FFT frequency bins
    */
   setBins(bins: number): void;
 
   /**
    * Sets the FFT smoothing amount (default: 0.4)
+   * @deprecated This method should not be used in Videodrome.
    * @param value FFT smoothing amount (0 = no smoothing, 1 = maximum smoothing)
    */
   setSmooth(value: number): void;
 
   /**
-   * Sets the FFT threshold (default: 2)
-   * @param value FFT threshold (higher means less sensitive)
-   */
-  setCutoff(value: number): void;
-
-  /**
    * Sets the FFT scaling (default: 10)
+   * @deprecated This method should not be used in Videodrome.
    * @param value FFT scale (lower means higher FFT values, i.e. inverse scaling)
    */
   setScale(value: number): void;
+
+  /**
+   * Sets the FFT threshold (default: 2)
+   * @deprecated This method should not be used in Videodrome.
+   * @param value FFT threshold (higher means less sensitive)
+   */
+  setCutoff(value: number): void;
 
   /**
    * Shows the audio analyzer

@@ -35,12 +35,12 @@ declare module 'hydra-synth' {
 
   export interface HydraAudioAnalyser {
     fft: Float32Array;
-    setBins?: (bins: number) => void;
-    setSmooth?: (value: number) => void;
-    setCutoff?: (value: number) => void;
-    setScale?: (value: number) => void;
-    show?: () => void;
-    hide?: () => void;
+    setBins: (bins: number) => void;
+    setSmooth: (value: number) => void;
+    setCutoff: (value: number) => void;
+    setScale: (value: number) => void;
+    show: () => void;
+    hide: () => void;
   }
 
   export interface HydraSource {

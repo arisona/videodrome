@@ -1,0 +1,90 @@
+/* Slider Control Component */
+
+.slider-control-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.slider-control-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.slider-control-label:hover {
+  color: var(--text-primary);
+}
+
+.slider-control-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 2px;
+  outline: none;
+  margin-top: 8px;
+}
+
+.slider-control-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Slider thumb - webkit browsers */
+.slider-control-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--primary-blue);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Slider thumb - Firefox */
+.slider-control-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--primary-blue);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Disabled state for slider thumb */
+.slider-control-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.slider-control-slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Focus styling for slider */
+.slider-control-slider:focus {
+  outline: none;
+}
+
+.slider-control-slider:focus::-webkit-slider-thumb {
+  background: var(--text-primary);
+}
+
+.slider-control-slider:focus::-moz-range-thumb {
+  background: var(--text-primary);
+}
+
+/* Out-of-range indicator (red thumb when parameter control sets value outside range) */
+.slider-control-slider.out-of-range::-webkit-slider-thumb {
+  background: #d32f2f;
+}
+
+.slider-control-slider.out-of-range::-moz-range-thumb {
+  background: #d32f2f;
+}

@@ -6,6 +6,7 @@
     <title>Videodrome - Editor</title>
     <link rel="stylesheet" href="./components/content-explorer.css" />
     <link rel="stylesheet" href="./components/parameter-control.css" />
+    <link rel="stylesheet" href="./components/slider-control.css" />
     <link rel="stylesheet" href="./monaco-setup.css" />
     <link rel="stylesheet" href="./components/tooltip.css" />
     <link rel="stylesheet" href="./components/modal.css" />
@@ -72,6 +73,11 @@
         background: var(--primary-blue-active);
       }
 
+      button:focus-visible {
+        outline: 2px solid var(--primary-blue);
+        outline-offset: 2px;
+      }
+
       button.secondary {
         background: var(--border-color);
       }
@@ -96,6 +102,11 @@
 
       button.icon-btn:active {
         background: var(--primary-blue);
+      }
+
+      button.icon-btn:focus-visible {
+        outline: 2px solid var(--primary-blue);
+        outline-offset: 1px;
       }
 
       #content {
@@ -175,6 +186,11 @@
       .main-tab.active {
         color: var(--text-primary);
         background: var(--primary-blue);
+      }
+
+      .main-tab:focus-visible {
+        outline: 2px solid var(--primary-blue);
+        outline-offset: -2px;
       }
 
       .main-view {
@@ -264,6 +280,11 @@
         background: var(--primary-blue);
       }
 
+      .editor-btn:focus-visible {
+        outline: 2px solid var(--primary-blue);
+        outline-offset: 2px;
+      }
+
       /* Composer tab */
       #editor-composer-content {
         flex: 1;
@@ -284,7 +305,7 @@
         display: flex;
         flex-direction: column;
         min-width: 0;
-        background: #000000;
+        background: black;
       }
 
       #editor-composer-monaco {
@@ -294,19 +315,25 @@
         max-height: 100%;
       }
 
-      #editor-composer-preview-container {
-        flex: 1;
+      /* Shared preview container styles */
+      .preview-container {
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 12px;
-        position: relative;
+        background: black;
       }
 
-      #editor-composer-preview-canvas {
+      .preview-canvas {
         max-width: 100%;
         max-height: 100%;
         background: black;
+      }
+
+      /* Composer preview specific */
+      #editor-composer-preview-container {
+        flex: 1;
+        position: relative;
       }
 
       /* Performer tab */
@@ -345,21 +372,11 @@
         max-height: 100%;
       }
 
+      /* Performer preview specific */
       .editor-performer-preview-container {
         height: 200px;
         flex-shrink: 0;
-        background: #000000;
         border-top: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 12px;
-      }
-
-      .editor-performer-preview-canvas {
-        max-width: 100%;
-        max-height: 100%;
-        background: black;
       }
 
       /* Performer compositor/mixer controls */
@@ -421,82 +438,6 @@
         display: flex;
       }
 
-      .editor-performer-param-slider {
-        width: 100%;
-        max-width: 160px;
-        -webkit-appearance: none;
-        appearance: none;
-        height: 6px;
-        background: var(--border-color);
-        border-radius: 2px;
-        outline: none;
-        margin-top: 8px;
-      }
-
-      .editor-performer-param-slider:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .editor-performer-param-value {
-        font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-        font-size: 11px;
-        color: var(--text-secondary);
-        min-width: 45px;
-        text-align: right;
-      }
-
-      .editor-performer-param-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 14px;
-        height: 14px;
-        background: var(--primary-blue);
-        border-radius: 50%;
-        cursor: pointer;
-      }
-
-      .editor-performer-param-slider::-moz-range-thumb {
-        width: 14px;
-        height: 14px;
-        background: var(--primary-blue);
-        border-radius: 50%;
-        cursor: pointer;
-        border: none;
-      }
-
-      .editor-performer-param-slider:disabled::-webkit-slider-thumb {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-
-      .editor-performer-param-slider:disabled::-moz-range-thumb {
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-
-      /* Focus styling for sliders */
-      .editor-performer-param-slider:focus {
-        outline: none;
-      }
-
-      .editor-performer-param-slider:focus::-webkit-slider-thumb {
-        background: var(--text-primary);
-      }
-
-      .editor-performer-param-slider:focus::-moz-range-thumb {
-        background: var(--text-primary);
-      }
-
-      /* Out-of-range slider styling */
-      .editor-performer-param-slider.out-of-range::-webkit-slider-thumb {
-        background: #d32f2f;
-      }
-
-      .editor-performer-param-slider.out-of-range::-moz-range-thumb {
-        background: #d32f2f;
-      }
-
       #editor-performer-compositor-panel {
         background: var(--bg-input);
         border: 1px solid var(--border-color);
@@ -510,24 +451,9 @@
       /* Sources tab */
       #editor-sources-container {
         flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 12px;
-        background: #000000;
-      }
-
-      #editor-sources-canvas {
-        max-width: 100%;
-        max-height: 100%;
-        background: black;
       }
 
       /* Settings tab */
-      #settings-tab {
-        flex-direction: column;
-      }
-
       #settings-toolbar {
         background: var(--bg-secondary);
         padding: var(--gap-medium) 12px;
@@ -609,12 +535,7 @@
       }
 
       .browse-btn {
-        background: var(--border-color);
         padding: 6px var(--gap-large);
-      }
-
-      .browse-btn:hover {
-        background: var(--hover-border);
       }
 
       .number-group {
@@ -650,6 +571,59 @@
         font-size: 13px;
         color: var(--text-secondary);
       }
+
+      /* Audio Settings Drawer */
+      #audio-settings-drawer {
+        flex-shrink: 0;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+      }
+
+      #audio-settings-toggle {
+        display: flex;
+        align-items: center;
+        gap: var(--gap-small);
+        padding: var(--gap-medium);
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: all 0.2s;
+        user-select: none;
+      }
+
+      #audio-settings-toggle:hover {
+        color: var(--text-primary);
+        background: var(--hover-bg);
+      }
+
+      #audio-settings-toggle-icon {
+        font-size: 10px;
+        transition: transform 0.2s;
+      }
+
+      #audio-settings-drawer.collapsed #audio-settings-toggle-icon {
+        transform: rotate(180deg);
+      }
+
+      #audio-settings-content {
+        padding: var(--gap-medium) 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        transition: max-height 0.2s ease-out, opacity 0.2s;
+      }
+
+      #audio-settings-drawer.collapsed #audio-settings-content {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
     </style>
   </head>
   <body>
@@ -766,6 +740,19 @@
                 </ul>
               </div>
             </div>
+
+            <!-- Audio Settings Drawer -->
+            <div id="audio-settings-drawer">
+              <div id="audio-settings-toggle" title="Toggle audio settings">
+                <span id="audio-settings-toggle-icon">▲</span>
+                <span>Audio Analyzer</span>
+              </div>
+              <div id="audio-settings-content">
+                <div id="audio-smooth-control"></div>
+                <div id="audio-scale-control"></div>
+                <div id="audio-cutoff-control"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Main editor area -->
@@ -828,8 +815,13 @@
 
                 <!-- Preview section -->
                 <div id="editor-composer-preview-section">
-                  <div id="editor-composer-preview-container">
-                    <canvas id="editor-composer-preview-canvas" width="640" height="480"></canvas>
+                  <div id="editor-composer-preview-container" class="preview-container">
+                    <canvas
+                      id="editor-composer-preview-canvas"
+                      class="preview-canvas"
+                      width="640"
+                      height="480"
+                    ></canvas>
                   </div>
                 </div>
               </div>
@@ -890,9 +882,9 @@
                   </div>
                   <div class="editor-performer-panel-body">
                     <div class="editor-monaco-container" id="editor-a"></div>
-                    <div class="editor-performer-preview-container">
+                    <div class="editor-performer-preview-container preview-container">
                       <canvas
-                        class="editor-performer-preview-canvas"
+                        class="preview-canvas"
                         id="preview-canvas-a"
                         width="640"
                         height="480"
@@ -953,9 +945,9 @@
                   </div>
                   <div class="editor-performer-panel-body">
                     <div class="editor-monaco-container" id="editor-b"></div>
-                    <div class="editor-performer-preview-container">
+                    <div class="editor-performer-preview-container preview-container">
                       <canvas
-                        class="editor-performer-preview-canvas"
+                        class="preview-canvas"
                         id="preview-canvas-b"
                         width="640"
                         height="480"
@@ -975,72 +967,12 @@
                     <!-- Will be populated dynamically from composite-functions.ts -->
                   </select>
                 </div>
-                <div class="editor-performer-param-slot" id="param-slot-1">
-                  <label class="editor-performer-compositor-label" id="param-1-label"
-                    >Param 1</label
-                  >
-                  <input
-                    type="range"
-                    id="param-1-slider"
-                    class="editor-performer-param-slider"
-                    disabled
-                  />
-                </div>
-                <div class="editor-performer-param-slot" id="param-slot-2">
-                  <label class="editor-performer-compositor-label" id="param-2-label"
-                    >Param 2</label
-                  >
-                  <input
-                    type="range"
-                    id="param-2-slider"
-                    class="editor-performer-param-slider"
-                    disabled
-                  />
-                </div>
-                <div class="editor-performer-param-slot" id="param-slot-3">
-                  <label class="editor-performer-compositor-label" id="param-3-label"
-                    >Param 3</label
-                  >
-                  <input
-                    type="range"
-                    id="param-3-slider"
-                    class="editor-performer-param-slider"
-                    disabled
-                  />
-                </div>
-                <div class="editor-performer-param-slot" id="param-slot-4">
-                  <label class="editor-performer-compositor-label" id="param-4-label"
-                    >Param 4</label
-                  >
-                  <input
-                    type="range"
-                    id="param-4-slider"
-                    class="editor-performer-param-slider"
-                    disabled
-                  />
-                </div>
-                <div class="editor-performer-param-slot" id="param-slot-5">
-                  <label class="editor-performer-compositor-label" id="param-5-label"
-                    >Param 5</label
-                  >
-                  <input
-                    type="range"
-                    id="param-5-slider"
-                    class="editor-performer-param-slider"
-                    disabled
-                  />
-                </div>
-                <div class="editor-performer-param-slot" id="param-slot-6">
-                  <label class="editor-performer-compositor-label" id="param-6-label"
-                    >Param 6</label
-                  >
-                  <input
-                    type="range"
-                    id="param-6-slider"
-                    class="editor-performer-param-slider"
-                    disabled
-                  />
-                </div>
+                <div class="editor-performer-param-slot" id="param-slot-1"></div>
+                <div class="editor-performer-param-slot" id="param-slot-2"></div>
+                <div class="editor-performer-param-slot" id="param-slot-3"></div>
+                <div class="editor-performer-param-slot" id="param-slot-4"></div>
+                <div class="editor-performer-param-slot" id="param-slot-5"></div>
+                <div class="editor-performer-param-slot" id="param-slot-6"></div>
               </div>
             </div>
 
@@ -1051,8 +983,8 @@
                   <span>Sources</span>
                 </div>
               </div>
-              <div id="editor-sources-container">
-                <canvas id="editor-sources-canvas" width="640" height="480"></canvas>
+              <div id="editor-sources-container" class="preview-container">
+                <canvas id="editor-sources-canvas" class="preview-canvas" width="640" height="480"></canvas>
               </div>
             </div>
 
@@ -1132,7 +1064,9 @@
                       </div>
                       <div class="input-group">
                         <input type="text" id="settings-patch-directory" readonly />
-                        <button class="browse-btn" id="settings-browse-patch-dir">Browse...</button>
+                        <button class="browse-btn secondary" id="settings-browse-patch-dir">
+                          Browse...
+                        </button>
                       </div>
                     </div>
                     <div class="setting-item">
@@ -1142,7 +1076,9 @@
                       </div>
                       <div class="input-group">
                         <input type="text" id="settings-media-directory" readonly />
-                        <button class="browse-btn" id="settings-browse-media-dir">Browse...</button>
+                        <button class="browse-btn secondary" id="settings-browse-media-dir">
+                          Browse...
+                        </button>
                       </div>
                     </div>
                   </div>

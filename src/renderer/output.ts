@@ -7,6 +7,7 @@ import { getCompositeFunction } from '../shared/composite-functions';
 import { executeInHydraContext, assignHydraSource } from './hydra/hydra-execution';
 
 import type {
+  AudioAnalyzerParams,
   ExecutionPayload,
   ResultsPayload,
   MediaType,
@@ -363,6 +364,17 @@ window.electronAPI.onSetHydraSource(
     }
   },
 );
+
+// Listen for audio analyzer parameter changes from editor
+window.electronAPI.onSetAudioAnalyzerParams((params: AudioAnalyzerParams) => {
+  try {
+    hydraC.synth.a.setSmooth(params.smooth);
+    hydraC.synth.a.setScale(params.scale);
+    hydraC.synth.a.setCutoff(params.cutoff);
+  } catch (error) {
+    console.error('Output: Error setting audio analyzer params:', error);
+  }
+});
 
 // Listen for code execution from editor
 window.electronAPI.onPreviewPortReady(() => {

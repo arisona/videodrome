@@ -301,6 +301,13 @@ ipcMain.on(
   },
 );
 
+ipcMain.on(
+  IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS,
+  (_event, params: { smooth: number; scale: number; cutoff: number }) => {
+    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS, params);
+  },
+);
+
 ipcMain.on(IPC_CHANNELS.EDITOR_OUTPUT_TOGGLE, () => {
   if (!outputWindow) {
     throw new Error('Output window does not exist');
