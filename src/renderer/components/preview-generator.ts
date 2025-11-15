@@ -1,5 +1,7 @@
 /* eslint-env browser */
 
+import { filePathToUrl } from '../utils/file-url';
+
 import type { MediaFile, MediaType } from '../../shared/ipc-types';
 
 const PREVIEW_HEIGHT = 48;
@@ -221,7 +223,7 @@ export class PreviewGenerator {
     }
 
     // Fetch the GIF data
-    const response = await fetch(`file://${filePath}`);
+    const response = await fetch(filePathToUrl(filePath));
     const arrayBuffer = await response.arrayBuffer();
 
     // Create ImageDecoder
@@ -279,7 +281,7 @@ export class PreviewGenerator {
     // with a video element for now
 
     const video = document.createElement('video');
-    video.src = `file://${filePath}`;
+    video.src = filePathToUrl(filePath);
     video.preload = 'metadata';
 
     // Wait for metadata to load
@@ -400,7 +402,7 @@ export class PreviewGenerator {
       img.onerror = () => {
         reject(new Error('Failed to load image'));
       };
-      img.src = `file://${src}`;
+      img.src = filePathToUrl(src);
     });
   }
 }

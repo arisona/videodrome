@@ -31,6 +31,7 @@ import {
   hideSources,
   setSource as setSourceInSources,
 } from './sources-tab';
+import { filePathToUrl } from './utils/file-url';
 import { getFilename } from './utils/path';
 import { applyShortcutTooltips } from './utils/shortcuts';
 
@@ -665,7 +666,7 @@ void (async () => {
   initMediaExplorer({
     onMediaSelect: (mediaPath, _mediaName, sourceSlot, mediaType) => {
       // Store in global sources
-      const mediaUrl = `file://${mediaPath}`;
+      const mediaUrl = filePathToUrl(mediaPath);
       globalSources[sourceSlot] = {
         mediaPath: mediaPath,
         mediaUrl: mediaUrl,

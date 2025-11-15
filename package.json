@@ -5,23 +5,21 @@
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "npm run build && electron .",
+    "dev:renderer": "vite",
+    "watch": "concurrently \"vite\" \"cross-env NODE_ENV=development electron .\"",
     "type-check": "npm run type-check:main && npm run type-check:renderer",
     "type-check:main": "tsc -p tsconfig.main.json --noEmit",
     "type-check:renderer": "tsc -p tsconfig.renderer.json --noEmit",
-    "type-check:watch": "concurrently \"tsc -p tsconfig.main.json --noEmit --watch\" \"tsc -p tsconfig.renderer.json --noEmit --watch\"",
     "build": "npm run type-check && npm run build:main && npm run build:preload && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:preload": "esbuild src/main/preload.ts --bundle --platform=node --format=cjs --outfile=dist/main/preload.js --external:electron --packages=external",
     "build:renderer": "vite build",
-    "watch": "concurrently \"tsc -p tsconfig.main.json -w\" \"vite build --watch\"",
     "start": "electron .",
-    "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "check-format": "prettier --check ."
+    "format": "prettier --write ."
   },
   "keywords": [
     "hydra",
@@ -29,7 +27,7 @@
     "livecoding",
     "cronenberg"
   ],
-  "author": "",
+  "author": "Stefan Arisona",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^24.10.1",
@@ -37,6 +35,7 @@
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
     "electron": "^39.2.0",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.27.0",
