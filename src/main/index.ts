@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { app, BrowserWindow, dialog, ipcMain, MessageChannelMain, screen } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, MessageChannelMain, screen, shell } from 'electron';
 
 import { FILE_EXTENSIONS, IPC_CHANNELS, APP_CONFIG } from '../shared/constants';
 import { debounce } from '../shared/debounce';
@@ -129,6 +129,11 @@ function createEditorWindowAndShow() {
 
     outputWindow?.hide();
   });
+
+  editorWindow.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
 function createOutputWindowAndKeepHidden() {
@@ -172,6 +177,11 @@ function createOutputWindowAndKeepHidden() {
     editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_READY);
     editorWindow?.webContents.send(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, false);
     setupPreviewChannel();
+  });
+
+  outputWindow.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url);
+    return { action: 'deny' };
   });
 }
 
