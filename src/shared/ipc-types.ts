@@ -17,7 +17,6 @@ export interface Settings {
     sensitivity: number;
     mouseDragLock: boolean;
   };
-  intellisenseEnabled: boolean;
   audioDrawerOpen?: boolean;
 }
 

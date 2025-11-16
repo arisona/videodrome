@@ -28,7 +28,6 @@ let mediaDirectoryInput: HTMLInputElement;
 let parameterControlSensitivityInput: HTMLInputElement;
 let parameterControlDragLockCheckbox: HTMLInputElement;
 let parameterControlCheckbox: HTMLInputElement;
-let intellisenseEnabledCheckbox: HTMLInputElement;
 let browsePatchDirBtn: HTMLButtonElement;
 let browseMediaDirBtn: HTMLButtonElement;
 let restoreDefaultsBtn: HTMLButtonElement;
@@ -125,9 +124,6 @@ export function initSettings(
   parameterControlCheckbox = document.getElementById(
     'settings-parameter-control-enabled',
   ) as HTMLInputElement;
-  intellisenseEnabledCheckbox = document.getElementById(
-    'settings-intellisense-enabled',
-  ) as HTMLInputElement;
 
   browsePatchDirBtn = document.getElementById('settings-browse-patch-dir') as HTMLButtonElement;
   browseMediaDirBtn = document.getElementById('settings-browse-media-dir') as HTMLButtonElement;
@@ -190,7 +186,6 @@ function populateForm() {
   parameterControlSensitivityInput.value = settings.parameterControl.sensitivity.toString();
   parameterControlDragLockCheckbox.checked = settings.parameterControl.mouseDragLock;
   parameterControlCheckbox.checked = settings.parameterControl.enabled;
-  intellisenseEnabledCheckbox.checked = settings.intellisenseEnabled;
 }
 
 /**
@@ -208,7 +203,6 @@ function getFormSettings(): Settings {
       mouseDragLock: parameterControlDragLockCheckbox.checked,
       enabled: parameterControlCheckbox.checked,
     },
-    intellisenseEnabled: intellisenseEnabledCheckbox.checked,
   };
 }
 
@@ -277,7 +271,6 @@ function restoreDefaults() {
     parameterControlSensitivityInput.value = defaults.parameterControl.sensitivity.toString();
     parameterControlDragLockCheckbox.checked = defaults.parameterControl.mouseDragLock;
     parameterControlCheckbox.checked = defaults.parameterControl.enabled;
-    intellisenseEnabledCheckbox.checked = defaults.intellisenseEnabled;
 
     // Save the restored settings
     settingsState.currentSettings = await updateSettings(defaults);
@@ -343,10 +336,6 @@ function setupEventListeners() {
   });
 
   parameterControlCheckbox.addEventListener('change', () => {
-    void autoSaveSettings();
-  });
-
-  intellisenseEnabledCheckbox.addEventListener('change', () => {
     void autoSaveSettings();
   });
 

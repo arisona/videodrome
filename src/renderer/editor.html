@@ -613,7 +613,9 @@
         gap: 12px;
         max-height: 200px;
         overflow-y: auto;
-        transition: max-height 0.2s ease-out, opacity 0.2s;
+        transition:
+          max-height 0.2s ease-out,
+          opacity 0.2s;
       }
 
       #audio-settings-drawer.collapsed #audio-settings-content {
@@ -623,7 +625,6 @@
         padding-top: 0;
         padding-bottom: 0;
       }
-
     </style>
   </head>
   <body>
@@ -984,7 +985,12 @@
                 </div>
               </div>
               <div id="editor-sources-container" class="preview-container">
-                <canvas id="editor-sources-canvas" class="preview-canvas" width="640" height="480"></canvas>
+                <canvas
+                  id="editor-sources-canvas"
+                  class="preview-canvas"
+                  width="640"
+                  height="480"
+                ></canvas>
               </div>
             </div>
 
@@ -998,16 +1004,6 @@
               </div>
               <div id="settings-content">
                 <div class="settings-section">
-                  <div class="settings-group">
-                    <h2>Editor</h2>
-                    <div class="setting-item">
-                      <div class="checkbox-item">
-                        <input type="checkbox" id="settings-intellisense-enabled" checked />
-                        <label for="settings-intellisense-enabled">Enable Intellisense</label>
-                      </div>
-                    </div>
-                  </div>
-
                   <div class="settings-group">
                     <h2>Parameter Control</h2>
                     <div class="setting-item">

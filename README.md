@@ -22,7 +22,7 @@ The sidebar provides the following two explorers:
 
 ## Intellisense and parameter controls
 
-The patch editors are built on Monaco and come with Intellisense. Intellisense integration is currently a bit glitchy and can be disabled in the settings.
+The patch editors are built on Monaco and come with Intellisense.
 
 To quickly edit parameters, hover over numbers (or move cursor and press Shift+Enter) to open a widget for value adjustment using mouse or keyboard. Drag lock and sensitivity can be configured in settings.
 

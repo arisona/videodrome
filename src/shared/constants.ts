@@ -71,7 +71,6 @@ export const SUPPORTED_GIF_EXTS = FILE_EXTENSIONS.GIF;
 // ============================================================================
 
 export const DEFAULT_SETTINGS = {
-  INTELLISENSE_ENABLED: true,
   PARAMETER_CONTROL_ENABLED: true,
   PARAMETER_CONTROL_SENSITIVITY: 10,
   PARAMETER_CONTROL_DRAG_LOCK: true,

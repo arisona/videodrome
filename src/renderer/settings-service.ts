@@ -38,7 +38,6 @@ async function constructDefaultSettings(): Promise<Settings> {
       mouseDragLock: DEFAULT_SETTINGS.PARAMETER_CONTROL_DRAG_LOCK,
       enabled: DEFAULT_SETTINGS.PARAMETER_CONTROL_ENABLED,
     },
-    intellisenseEnabled: DEFAULT_SETTINGS.INTELLISENSE_ENABLED,
   };
 }
 
