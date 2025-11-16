@@ -184,16 +184,25 @@ export class MonacoEditorPanel {
    * Setup hover behavior for parameter control
    */
   private setupHoverBehavior(): void {
-    const mouseMoveDisposable = this.editor.onMouseMove((e) => {
-      // Ignore if any mouse buttons are pressed
-      if (e.event.buttons !== 0) {
-        return;
+    // Cancel hover timer when mouse button is pressed (for selection/dragging)
+    const mouseDownDisposable = this.editor.onMouseDown(() => {
+      if (this.hoverTimer) {
+        clearTimeout(this.hoverTimer);
+        this.hoverTimer = null;
       }
+      this.lastHoverPosition = null;
+    });
 
+    const mouseMoveDisposable = this.editor.onMouseMove((e) => {
       // Clear any existing hover timer
       if (this.hoverTimer) {
         clearTimeout(this.hoverTimer);
         this.hoverTimer = null;
+      }
+
+      // Ignore if any mouse buttons are pressed
+      if (e.event.buttons !== 0) {
+        return;
       }
 
       // Only activate on content hover (not gutter, margins, etc.)
@@ -263,7 +272,7 @@ export class MonacoEditorPanel {
       }
     });
 
-    this.disposables.push(mouseMoveDisposable);
+    this.disposables.push(mouseDownDisposable, mouseMoveDisposable);
   }
 
   /**

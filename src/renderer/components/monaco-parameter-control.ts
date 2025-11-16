@@ -135,11 +135,20 @@ export function detectNumberAtPosition(
 
       if (isNaN(value)) continue;
 
-      // Check if this number is part of an array index (e.g., arr[123] or arr[ 123 ])
-      // Test if there's a '[' before the number (ignoring whitespace)
+      // Check if this number is part of an array index (e.g., arr[123] or arr[i][0])
+      // vs an array literal element (e.g., [0, 1, 2])
       const beforeNumber = line.substring(0, match.index);
       if (/\[\s*$/.test(beforeNumber)) {
-        continue; // Skip array indices
+        // There's a '[' before the number. Check what's before the '['
+        const lastBracketIndex = beforeNumber.lastIndexOf('[');
+        const beforeBracket = beforeNumber.substring(0, lastBracketIndex);
+
+        // If there's an identifier, closing bracket, or closing paren before '[',
+        // this is array element access (arr[0], foo.bar[0], arr[i][0], fn()[0])
+        // Otherwise it's an array literal ([0, 1, 2], return [0], x = [0])
+        if (/[\w\])]$/.test(beforeBracket.trim())) {
+          continue; // Skip array indices
+        }
       }
 
       const range = new monaco.Range(position.lineNumber, startCol, position.lineNumber, endCol);
