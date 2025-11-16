@@ -26,6 +26,8 @@ export default defineConfig({
   },
   plugins: [
     {
+      // this would be needed for watching renderer process local files in dev mode
+      // watching is currently not working properly, but leaving this here for future reference
       name: 'local-file-server',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {

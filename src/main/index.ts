@@ -197,8 +197,8 @@ void app
     app.setAboutPanelOptions({
       applicationName: APP_CONFIG.APP_NAME,
       applicationVersion: app.getVersion(),
-      credits: 'Render Engine:\n' + 'Hydra Synth (https://hydra.ojack.xyz/)',
-      copyright: '© 2025 Corebounce',
+      credits: 'Render Engine\n' + 'Hydra Synth • https://hydra.ojack.xyz',
+      copyright: '© 2025 Corebounce\nhttps://github.com/arisona/videodrome',
     });
 
     createEditorWindowAndShow();
