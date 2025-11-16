@@ -7,7 +7,7 @@ import {
   SUPPORTED_GIF_EXTS,
 } from '../../shared/constants';
 
-import { createDirectorySkipFilter, createExtensionFilter, scanDirectory } from './file-scanning';
+import { createExtensionFilter, scanDirectory } from './file-scanning';
 
 import type { MediaFile, MediaType } from '../../shared/ipc-types';
 
@@ -25,9 +25,8 @@ export function collectMediaFiles(directory: string): Array<MediaFile> {
 
   const scannedItems = scanDirectory(directory, {
     sortDirectoriesFirst: true,
-    fileFilter: createExtensionFilter(supportedExts),
-    directoryFilter: createDirectorySkipFilter(['.cache']),
     skipHiddenFiles: true,
+    fileFilter: createExtensionFilter(supportedExts),
   });
 
   return scannedItems

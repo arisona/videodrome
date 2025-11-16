@@ -59,6 +59,7 @@ function startWatchers(): void {
     try {
       const patches = scanDirectory(patchDirectory, {
         sortDirectoriesFirst: true,
+        skipHiddenFiles: true,
         fileFilter: (fileName) => fileName.endsWith(FILE_EXTENSIONS.PATCH),
       });
       editorWindow.webContents.send(IPC_CHANNELS.EDITOR_PATCHES_CHANGED, patches);
@@ -419,6 +420,7 @@ ipcMain.handle(IPC_CHANNELS.EDITOR_PATCHES_LIST, () => {
 
     const patches = scanDirectory(patchDir, {
       sortDirectoriesFirst: true,
+      skipHiddenFiles: true,
       fileFilter: (fileName) => fileName.endsWith(FILE_EXTENSIONS.PATCH),
     });
 
