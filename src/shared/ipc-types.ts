@@ -128,13 +128,23 @@ export interface ElectronAPI {
   isPreviewPortReady: () => boolean;
   sendExecutionResults: (results: ResultsPayload) => void;
   onExecutionResults: (callback: (results: ResultsPayload) => void) => void;
-  setHydraSource: (sourceSlot: HydraSourceSlot, mediaUrl: string, mediaType: MediaType) => void;
+  setHydraSource: (
+    sourceSlot: HydraSourceSlot,
+    mediaUrl: string,
+    mediaType: MediaType,
+    playbackSpeed: number,
+  ) => void;
   onSetHydraSource: (
     callback: (data: {
       sourceSlot: HydraSourceSlot;
       mediaUrl: string;
       mediaType: MediaType;
+      playbackSpeed: number;
     }) => void,
+  ) => void;
+  setHydraSourcePlaybackSpeed: (sourceSlot: HydraSourceSlot, speed: number) => void;
+  onSetHydraSourcePlaybackSpeed: (
+    callback: (data: { sourceSlot: HydraSourceSlot; speed: number }) => void,
   ) => void;
   // Audio analyzer API
   setAudioAnalyzerParams: (params: AudioAnalyzerParams) => void;

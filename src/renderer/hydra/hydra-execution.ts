@@ -24,7 +24,7 @@
  * - hydra-gif.ts: Specialized GIF handling (used internally by assignHydraSource)
  */
 
-import { initGifSource } from './hydra-gif';
+import { initGifSource, setGifPlaybackSpeed } from './hydra-gif';
 
 import type { MediaType } from '../../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
@@ -118,7 +118,7 @@ export function executeInHydraContext(hydra: Hydra, code: string, clear = false)
 }
 
 /**
- * Cleans up a Hydra instance to release resources
+ * Disposes a Hydra instance to release resources
  * Hydra doesn't expose a proper dispose() method, so this does the best cleanup possible:
  * - Calls hush() to stop rendering and clear outputs
  * - Clears all sources to release media streams (cameras, videos, etc.)
@@ -127,12 +127,12 @@ export function executeInHydraContext(hydra: Hydra, code: string, clear = false)
  * Note: Some resources (WebGL context, animation loop) will be garbage collected
  * when the Hydra instance is no longer referenced.
  *
- * @param hydraInstance - The Hydra instance to clean up
+ * @param hydraInstance - The Hydra instance to dispose
  * @param canvas - The canvas element used by Hydra
  */
-export function cleanupHydraInstance(hydraInstance: Hydra, canvas: HTMLCanvasElement): void {
+export function disposeHydraInstance(hydraInstance: Hydra, canvas: HTMLCanvasElement): void {
   try {
-    console.info(`Cleaning up Hydra instance on canvas '${canvas.id}'`);
+    console.info(`Disposing Hydra instance on canvas '${canvas.id}'`);
 
     // Call hush() to clear all sources and outputs
     // This stops rendering, clears visual output, and releases media streams
@@ -149,14 +149,14 @@ export function cleanupHydraInstance(hydraInstance: Hydra, canvas: HTMLCanvasEle
 }
 
 /**
- * Assigns a media source (image, video, gif) to a Hydra external source slot (s0-s3).
+ * Sets a media source (image, video, gif) to a Hydra external source slot (s0-s3).
  * Handles GIF initialization via ImageDecoder, video/image via Hydra's built-ins.
  * @param hydra Hydra instance
  * @param sourceSlot External source slot (s0-s3)
  * @param mediaUrl Absolute file URL (file://... or local path already converted)
  * @param mediaType Media type
  */
-export function assignHydraSource(
+export function setHydraSource(
   hydra: Hydra,
   sourceSlot: HydraSourceSlot,
   mediaUrl: string,
@@ -170,7 +170,7 @@ export function assignHydraSource(
       hydra.synth[sourceSlot].initVideo(mediaUrl, { mag: 'linear' });
       return;
     } else {
-      // gif
+      // mediaType === 'gif'
       void initGifSource(hydra, sourceSlot, mediaUrl);
       return;
     }
@@ -181,5 +181,41 @@ export function assignHydraSource(
       mediaType: mediaType,
       error,
     });
+  }
+}
+
+/**
+ * Sets playback speed for a source (video or GIF)
+ * @param hydra Hydra instance
+ * @param sourceSlot External source slot (s0-s3)
+ * @param mediaType Media type
+ * @param speed Playback speed (0 = paused, 1 = normal, 2 = 2x speed)
+ */
+export function setHydraSourcePlaybackSpeed(
+  hydra: Hydra,
+  sourceSlot: HydraSourceSlot,
+  mediaType: MediaType,
+  speed: number,
+): void {
+  try {
+    if (mediaType === 'video') {
+      const source = hydra.synth[sourceSlot];
+      const videoElement = source.src as HTMLVideoElement | undefined;
+      if (videoElement && videoElement instanceof HTMLVideoElement) {
+        if (speed === 0) {
+          videoElement.pause();
+        } else {
+          videoElement.playbackRate = speed;
+          // Resume playback if paused
+          void videoElement.play().catch((error: unknown) => {
+            console.warn('Could not resume video playback:', error);
+          });
+        }
+      }
+    } else if (mediaType === 'gif') {
+      setGifPlaybackSpeed(hydra, sourceSlot, speed);
+    }
+  } catch {
+    // Ignore errors applying playback speed (very common)
   }
 }

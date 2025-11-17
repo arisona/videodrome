@@ -2,11 +2,13 @@
 
 import Hydra from 'hydra-synth';
 
-import { getGlobalSources } from './editor';
+import { SliderControl } from './components/slider-control';
+import { getGlobalSources, setPlaybackSpeed } from './editor';
 import {
-  cleanupHydraInstance,
+  disposeHydraInstance,
   executeInHydraContext,
-  assignHydraSource,
+  setHydraSource,
+  setHydraSourcePlaybackSpeed,
 } from './hydra/hydra-execution';
 
 import type { MediaType } from '../shared/ipc-types';
@@ -16,6 +18,12 @@ import type { HydraSourceSlot } from 'hydra-synth';
 interface SourcesState {
   hydra: Hydra | null;
   isActive: boolean;
+  sliders: {
+    s0: SliderControl | null;
+    s1: SliderControl | null;
+    s2: SliderControl | null;
+    s3: SliderControl | null;
+  };
 }
 
 let sourcesState: SourcesState | null = null;
@@ -74,14 +82,20 @@ function reapplyGlobalSources() {
   const hydra = sourcesState.hydra;
 
   // Set each source that exists in global state
-  Object.entries(globalSources).forEach(([slot, assignment]) => {
-    if (assignment) {
+  Object.entries(globalSources).forEach(([slot, source]) => {
+    if (source.media) {
       try {
-        assignHydraSource(
+        setHydraSource(
           hydra,
           slot as HydraSourceSlot,
-          assignment.mediaUrl,
-          assignment.mediaType,
+          source.media.mediaUrl,
+          source.media.mediaType,
+        );
+        setHydraSourcePlaybackSpeed(
+          hydra,
+          slot as HydraSourceSlot,
+          source.media.mediaType,
+          source.playbackSpeed,
         );
       } catch (error) {
         console.error(`Error re-applying ${slot} to Sources:`, error);
@@ -95,14 +109,29 @@ export function setSource(
   sourceSlot: HydraSourceSlot,
   mediaUrl: string,
   mediaType: MediaType,
+  playbackSpeed: number,
 ): void {
   if (!sourcesState?.hydra) return;
-
   try {
-    assignHydraSource(sourcesState.hydra, sourceSlot, mediaUrl, mediaType);
+    setHydraSource(sourcesState.hydra, sourceSlot, mediaUrl, mediaType);
+    setHydraSourcePlaybackSpeed(sourcesState.hydra, sourceSlot, mediaType, playbackSpeed);
     runPatch();
   } catch (error) {
     console.error(`Error applying ${sourceSlot} to Sources:`, error);
+  }
+}
+
+export function setSourcePlaybackSpeed(
+  sourceSlot: HydraSourceSlot,
+  mediaType: MediaType,
+  playbackSpeed: number,
+): void {
+  if (!sourcesState?.hydra) return;
+  try {
+    setHydraSourcePlaybackSpeed(sourcesState.hydra, sourceSlot, mediaType, playbackSpeed);
+    runPatch();
+  } catch (error) {
+    console.error(`Error applying playback speed for ${sourceSlot} to Sources:`, error);
   }
 }
 
@@ -112,17 +141,14 @@ function runPatch() {
 
   const hydra = sourcesState.hydra;
   const globalSources = getGlobalSources();
-
   try {
-    // Display each source that has been initialized, otherwise show a placeholder
     const code = `
-      ${globalSources.s0 ? 'src(s0)' : 'solid(0.1, 0.1, 0.1)'}.out(o0);
-      ${globalSources.s1 ? 'src(s1)' : 'solid(0.1, 0.1, 0.1)'}.out(o1);
-      ${globalSources.s2 ? 'src(s2)' : 'solid(0.1, 0.1, 0.1)'}.out(o2);
-      ${globalSources.s3 ? 'src(s3)' : 'solid(0.1, 0.1, 0.1)'}.out(o3);
+      ${globalSources.s0.media ? 'src(s0)' : 'solid(0.1, 0.1, 0.1)'}.out(o0);
+      ${globalSources.s1.media ? 'src(s1)' : 'solid(0.1, 0.1, 0.1)'}.out(o1);
+      ${globalSources.s2.media ? 'src(s2)' : 'solid(0.1, 0.1, 0.1)'}.out(o2);
+      ${globalSources.s3.media ? 'src(s3)' : 'solid(0.1, 0.1, 0.1)'}.out(o3);
       render();
     `;
-
     executeInHydraContext(hydra, code);
   } catch (error) {
     console.error('Error rendering sources:', error);
@@ -132,7 +158,7 @@ function runPatch() {
 function cleanupHydra() {
   if (!sourcesState?.hydra) return;
   const canvas = document.getElementById('editor-sources-canvas') as HTMLCanvasElement;
-  cleanupHydraInstance(sourcesState.hydra, canvas);
+  disposeHydraInstance(sourcesState.hydra, canvas);
   sourcesState.hydra = null;
 }
 
@@ -141,12 +167,114 @@ export function initSources() {
   sourcesState = {
     hydra: null,
     isActive: false,
+    sliders: {
+      s0: null,
+      s1: null,
+      s2: null,
+      s3: null,
+    },
   };
+
+  // Create slider controls for each source
+  createSliderControls();
 
   // Handle window resize
   window.addEventListener('resize', () => {
     if (sourcesState?.isActive) {
       resizeCanvas();
+      positionSliders();
+    }
+  });
+}
+
+// Create DOM elements for slider controls
+function createSliderControls() {
+  if (!sourcesState) return;
+
+  const container = document.getElementById('editor-sources-container');
+  if (!container) return;
+
+  // Create wrapper for sliders
+  const slidersWrapper = document.createElement('div');
+  slidersWrapper.id = 'sources-sliders-wrapper';
+  slidersWrapper.style.position = 'absolute';
+  slidersWrapper.style.pointerEvents = 'none';
+  slidersWrapper.style.width = '100%';
+  slidersWrapper.style.height = '100%';
+  slidersWrapper.style.top = '0';
+  slidersWrapper.style.left = '0';
+  container.style.position = 'relative';
+  container.appendChild(slidersWrapper);
+
+  // Create slider for each source (s0, s1, s2, s3)
+  const sourceSlots: Array<HydraSourceSlot> = ['s0', 's1', 's2', 's3'];
+  sourceSlots.forEach((slot) => {
+    const sliderContainer = document.createElement('div');
+    sliderContainer.id = `slider-${slot}`;
+    sliderContainer.className = 'source-slider-container';
+    sliderContainer.style.position = 'absolute';
+    sliderContainer.style.pointerEvents = 'auto';
+    slidersWrapper.appendChild(sliderContainer);
+
+    const slider = new SliderControl(sliderContainer, {
+      label: `Source ${slot} speed`,
+      min: 0,
+      max: 2,
+      step: 0.01,
+      defaultValue: 1.0,
+      decimals: 1,
+      attachmentContainer: document.body, // Attach popups to body for proper positioning
+      onUpdate: (value: number) => {
+        setPlaybackSpeed(slot, value);
+      },
+    });
+
+    if (sourcesState) {
+      sourcesState.sliders[slot] = slider;
+    }
+  });
+
+  // Don't position sliders here - wait until tab is shown and canvas is properly sized
+}
+
+// Position sliders at bottom-left of each quadrant
+function positionSliders() {
+  if (!sourcesState) return;
+
+  const canvas = document.getElementById('editor-sources-canvas') as HTMLCanvasElement | null;
+  if (!canvas) return;
+
+  const container = canvas.parentElement;
+  if (!container) return;
+
+  // Get actual rendered dimensions
+  const canvasRect = canvas.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+
+  // Calculate canvas position relative to container
+  const canvasLeft = canvasRect.left - containerRect.left;
+  const canvasTop = canvasRect.top - containerRect.top;
+
+  // Use actual rendered canvas dimensions (not CSS dimensions)
+  const renderedWidth = canvasRect.width;
+  const renderedHeight = canvasRect.height;
+  const quadrantWidth = renderedWidth / 2;
+  const quadrantHeight = renderedHeight / 2;
+
+  // Position each slider at bottom-left of its quadrant
+  // Hydra layout: s0=top-left, s1=bottom-left, s2=top-right, s3=bottom-right
+  const positions = [
+    { slot: 's0', x: canvasLeft + 8, y: canvasTop + quadrantHeight - 40 }, // s0: Top-left
+    { slot: 's1', x: canvasLeft + 8, y: canvasTop + renderedHeight - 40 }, // s1: Bottom-left
+    { slot: 's2', x: canvasLeft + quadrantWidth + 8, y: canvasTop + quadrantHeight - 40 }, // s2: Top-right
+    { slot: 's3', x: canvasLeft + quadrantWidth + 8, y: canvasTop + renderedHeight - 40 }, // s3: Bottom-right
+  ];
+
+  positions.forEach(({ slot, x, y }) => {
+    const sliderContainer = document.getElementById(`slider-${slot}`);
+    if (sliderContainer) {
+      sliderContainer.style.left = String(x) + 'px';
+      sliderContainer.style.top = String(y) + 'px';
     }
   });
 }
@@ -157,6 +285,11 @@ export function showSources() {
   sourcesState.isActive = true;
   initHydra();
   runPatch();
+
+  // Reposition sliders after canvas is properly laid out
+  setTimeout(() => {
+    positionSliders();
+  }, 0);
 }
 
 // Hide sources tab

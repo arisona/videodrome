@@ -307,8 +307,18 @@ ipcMain.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results: ResultsPayloa
 
 ipcMain.on(
   IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE,
-  (_event, data: { sourceSlot: string; mediaUrl: string; mediaType: string }) => {
+  (
+    _event,
+    data: { sourceSlot: string; mediaUrl: string; mediaType: string; playbackSpeed: number },
+  ) => {
     outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, data);
+  },
+);
+
+ipcMain.on(
+  IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED,
+  (_event, data: { sourceSlot: string; speed: number }) => {
+    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED, data);
   },
 );
 

@@ -44,6 +44,8 @@ declare module 'hydra-synth' {
   }
 
   export interface HydraSource {
+    src: HTMLCanvasElement | HTMLImageElement | HTMLVideoElement | null;
+
     // Initialize source with a canvas or video element
     init: (
       opts: { src: HTMLCanvasElement | HTMLVideoElement; dynamic?: boolean },

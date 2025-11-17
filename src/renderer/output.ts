@@ -4,7 +4,11 @@ import Hydra from 'hydra-synth';
 
 import { getCompositeFunction } from '../shared/composite-functions';
 
-import { executeInHydraContext, assignHydraSource } from './hydra/hydra-execution';
+import {
+  executeInHydraContext,
+  setHydraSource,
+  setHydraSourcePlaybackSpeed,
+} from './hydra/hydra-execution';
 
 import type {
   AudioAnalyzerParams,
@@ -284,14 +288,14 @@ function executeHydraCode(
   try {
     executeInHydraContext(hydraA, patchA, true);
   } catch (error) {
-    console.error('Error executing patch A:', error);
+    console.error('Output: Error executing patch A:', error);
     results.resultA = { success: false, error: serializeError(error) };
   }
 
   try {
     executeInHydraContext(hydraB, patchB, true);
   } catch (error) {
-    console.error('Error executing patch B:', error);
+    console.error('Output: Error executing patch B:', error);
     results.resultB = { success: false, error: serializeError(error) };
   }
 
@@ -312,7 +316,7 @@ function executeHydraCode(
       if (!compositeInitialized || currentCompositeMode !== compositeMode) {
         const compositeFunc = getCompositeFunction(compositeMode);
         if (!compositeFunc) {
-          console.error(`Unknown composite function: ${compositeMode}`);
+          console.error(`Output: Unknown composite function: ${compositeMode}`);
           // Fallback to 'add' mode
           const fallbackFunc = getCompositeFunction('add');
           if (fallbackFunc) {
@@ -353,14 +357,41 @@ function executeHydraCode(
   });
 }
 
+// Listen for source assignments from editor (includes initial playback speed)
 window.electronAPI.onSetHydraSource(
-  (data: { sourceSlot: HydraSourceSlot; mediaUrl: string; mediaType: MediaType }) => {
+  (data: {
+    sourceSlot: HydraSourceSlot;
+    mediaUrl: string;
+    mediaType: MediaType;
+    playbackSpeed: number;
+  }) => {
     try {
-      const { sourceSlot: slot, mediaUrl: url, mediaType: type } = data;
-      assignHydraSource(hydraA, slot, url, type);
-      assignHydraSource(hydraB, slot, url, type);
+      const { sourceSlot: slot, mediaUrl: url, mediaType: type, playbackSpeed: speed } = data;
+      setHydraSource(hydraA, slot, url, type);
+      setHydraSource(hydraB, slot, url, type);
+      // Apply initial playback speed to both instances
+      setHydraSourcePlaybackSpeed(hydraA, slot, type, speed);
+      setHydraSourcePlaybackSpeed(hydraB, slot, type, speed);
     } catch (error) {
       console.error('Output: Error applying Hydra source:', error);
+    }
+  },
+);
+
+// Listen for playback speed changes from editor (speed-only, doesn't re-assign source)
+window.electronAPI.onSetHydraSourcePlaybackSpeed(
+  (data: { sourceSlot: HydraSourceSlot; speed: number }) => {
+    try {
+      const { sourceSlot: slot, speed } = data;
+      // We need to know the media type to apply speed correctly
+      // For now, try to apply to both video and gif (one will succeed based on what's actually loaded)
+      // This is safe because applyPlaybackSpeed checks if the source exists
+      setHydraSourcePlaybackSpeed(hydraA, slot, 'video', speed);
+      setHydraSourcePlaybackSpeed(hydraA, slot, 'gif', speed);
+      setHydraSourcePlaybackSpeed(hydraB, slot, 'video', speed);
+      setHydraSourcePlaybackSpeed(hydraB, slot, 'gif', speed);
+    } catch (error) {
+      console.error('Output: Error applying playback speed:', error);
     }
   },
 );
@@ -400,9 +431,9 @@ window.electronAPI.onRunCode((data: string) => {
         payload.compositeParams ?? {},
       );
     } else {
-      console.error('Invalid payload format received');
+      console.error('Output: Invalid payload format received');
     }
   } catch (error) {
-    console.error('Error parsing code payload:', error);
+    console.error('Output: Error parsing code payload:', error);
   }
 });

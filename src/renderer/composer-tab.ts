@@ -14,8 +14,9 @@ import { PatchPanel } from './components/patch-panel';
 import { getGlobalSources } from './editor';
 import {
   executeInHydraContext,
-  cleanupHydraInstance,
-  assignHydraSource,
+  disposeHydraInstance,
+  setHydraSource,
+  setHydraSourcePlaybackSpeed,
 } from './hydra/hydra-execution';
 import { requireElementById } from './utils/dom';
 
@@ -98,14 +99,20 @@ function reapplyGlobalSources() {
   const hydra = composerState.hydra;
 
   // Set each source that exists in global state
-  Object.entries(globalSources).forEach(([slot, assignment]) => {
-    if (assignment) {
+  Object.entries(globalSources).forEach(([slot, source]) => {
+    if (source.media) {
       try {
-        assignHydraSource(
+        setHydraSource(
           hydra,
           slot as HydraSourceSlot,
-          assignment.mediaUrl,
-          assignment.mediaType,
+          source.media.mediaUrl,
+          source.media.mediaType,
+        );
+        setHydraSourcePlaybackSpeed(
+          hydra,
+          slot as HydraSourceSlot,
+          source.media.mediaType,
+          source.playbackSpeed,
         );
       } catch (error) {
         console.error(`Error re-applying ${slot} to Composer:`, error);
@@ -115,13 +122,31 @@ function reapplyGlobalSources() {
 }
 
 // Export function to allow setting sources from editor.ts
-export function setSource(sourceSlot: HydraSourceSlot, mediaUrl: string, mediaType: MediaType) {
+export function setSource(
+  sourceSlot: HydraSourceSlot,
+  mediaUrl: string,
+  mediaType: MediaType,
+  playbackSpeed: number,
+) {
   if (!composerState?.hydra) return;
-
   try {
-    assignHydraSource(composerState.hydra, sourceSlot, mediaUrl, mediaType);
+    setHydraSource(composerState.hydra, sourceSlot, mediaUrl, mediaType);
+    setHydraSourcePlaybackSpeed(composerState.hydra, sourceSlot, mediaType, playbackSpeed);
   } catch (error) {
     console.error(`Error applying ${sourceSlot} to Composer:`, error);
+  }
+}
+
+export function setSourcePlaybackSpeed(
+  sourceSlot: HydraSourceSlot,
+  mediaType: MediaType,
+  playbackSpeed: number,
+) {
+  if (!composerState?.hydra) return;
+  try {
+    setHydraSourcePlaybackSpeed(composerState.hydra, sourceSlot, mediaType, playbackSpeed);
+  } catch (error) {
+    console.error(`Error setting playback speed for ${sourceSlot} in Composer:`, error);
   }
 }
 
@@ -130,7 +155,7 @@ function cleanupHydra() {
   const previewCanvas = document.getElementById(
     'editor-composer-preview-canvas',
   ) as HTMLCanvasElement;
-  cleanupHydraInstance(composerState.hydra, previewCanvas);
+  disposeHydraInstance(composerState.hydra, previewCanvas);
   composerState.hydra = null;
 
   // Unregister audio drawer listener

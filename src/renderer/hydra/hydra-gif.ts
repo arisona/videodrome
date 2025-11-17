@@ -38,14 +38,32 @@ interface GifSourceState {
   playing: boolean;
   timeoutId: number | null;
   canvas: HTMLCanvasElement;
+  playbackSpeed: number; // 0 = paused, 1 = normal, 2 = 2x speed
+  currentFrameIndex: number;
+  frameCount: number;
+  ctx: CanvasRenderingContext2D | null;
+  renderFrame: (() => Promise<void>) | null;
 }
 
-// Track active gif sources for cleanup
-const activeGifSources = new Map<string, GifSourceState>();
+// Track active gif sources for cleanup (per Hydra instance)
+const activeGifSources = new WeakMap<Hydra, Map<HydraSourceSlot, GifSourceState>>();
 
-// Cleanup a gid source
-function cleanupGifSource(slot: string): void {
-  const state = activeGifSources.get(slot);
+// Get or create the source map for a Hydra instance
+function getSourceMapForHydra(hydra: Hydra): Map<HydraSourceSlot, GifSourceState> {
+  let sourceMap = activeGifSources.get(hydra);
+  if (!sourceMap) {
+    sourceMap = new Map();
+    activeGifSources.set(hydra, sourceMap);
+  }
+  return sourceMap;
+}
+
+// Cleanup a gif source
+function cleanupGifSource(hydra: Hydra, slot: HydraSourceSlot): void {
+  const sourceMap = activeGifSources.get(hydra);
+  if (!sourceMap) return;
+
+  const state = sourceMap.get(slot);
   if (!state) return;
 
   // Stop animation loop
@@ -65,7 +83,7 @@ function cleanupGifSource(slot: string): void {
     state.decoder = null;
   }
 
-  activeGifSources.delete(slot);
+  sourceMap.delete(slot);
 }
 
 export async function initGifSource(
@@ -74,7 +92,7 @@ export async function initGifSource(
   mediaUrl: string,
 ): Promise<void> {
   // Clean up previous gif for this slot
-  cleanupGifSource(slot);
+  cleanupGifSource(hydra, slot);
 
   // Use ImageDecoder API to decode animated gif frames
   // This properly handles multi-frame gifs with frame timing
@@ -83,7 +101,6 @@ export async function initGifSource(
   if (!ctx) return;
 
   let decoder: ImageDecoder | null = null;
-  let currentFrameIndex = 0;
   let timeoutId: number | null = null;
 
   // Create state for this source
@@ -92,8 +109,14 @@ export async function initGifSource(
     playing: false,
     timeoutId: null,
     canvas,
+    playbackSpeed: 1.0, // Default to normal speed
+    currentFrameIndex: 0,
+    frameCount: 1,
+    ctx,
+    renderFrame: null,
   };
-  activeGifSources.set(slot, state);
+  const sourceMap = getSourceMapForHydra(hydra);
+  sourceMap.set(slot, state);
 
   try {
     // Check if ImageDecoder is available
@@ -133,32 +156,37 @@ export async function initGifSource(
     // Update state
     state.decoder = decoder;
     state.playing = true;
+    state.frameCount = track.frameCount;
 
     // Animation loop
     async function renderFrame(): Promise<void> {
-      if (!state.playing || !decoder) return;
+      if (!state.playing || !state.decoder) return;
+      if (state.playbackSpeed === 0) {
+        return;
+      }
 
       try {
         // Decode current frame
-        const result = await decoder.decode({ frameIndex: currentFrameIndex });
+        const result = await state.decoder.decode({ frameIndex: state.currentFrameIndex });
 
         // Draw to canvas
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(result.image, 0, 0);
+        if (state.ctx) {
+          state.ctx.clearRect(0, 0, canvas.width, canvas.height);
+          state.ctx.drawImage(result.image, 0, 0);
         }
 
         // Get frame duration (in microseconds, convert to ms)
         const frameDuration = result.image.duration ?? 100000; // default 100ms
-        const durationMs = frameDuration / 1000;
+        // Apply playback speed: higher speed = shorter duration
+        const durationMs = frameDuration / 1000 / state.playbackSpeed;
 
         // Clean up the frame
         result.image.close();
 
         // Move to next frame
-        currentFrameIndex = (currentFrameIndex + 1) % (track?.frameCount ?? 1);
+        state.currentFrameIndex = (state.currentFrameIndex + 1) % state.frameCount;
 
-        // Schedule next frame based on GIF timing
+        // Schedule next frame based on GIF timing and playback speed
         timeoutId = window.setTimeout(() => void renderFrame(), durationMs);
         state.timeoutId = timeoutId;
       } catch (error) {
@@ -167,11 +195,39 @@ export async function initGifSource(
       }
     }
 
+    // Store renderFrame in state so it can be called from setGifPlaybackSpeed
+    state.renderFrame = renderFrame;
+
     // Start animation
     void renderFrame();
   } catch (error) {
     console.error('Error initializing gif:', error);
     // Clean up on error
-    cleanupGifSource(slot);
+    cleanupGifSource(hydra, slot);
+  }
+}
+
+/**
+ * Set playback speed for a GIF source
+ * @param hydra Hydra instance
+ * @param slot Source slot (s0-s3)
+ * @param speed Playback speed (0 = paused, 1 = normal, 2 = 2x speed)
+ */
+export function setGifPlaybackSpeed(hydra: Hydra, slot: HydraSourceSlot, speed: number): void {
+  const sourceMap = activeGifSources.get(hydra);
+  if (!sourceMap) return;
+
+  const state = sourceMap.get(slot);
+  if (!state) return;
+
+  const previousSpeed = state.playbackSpeed;
+  state.playbackSpeed = speed;
+
+  if (previousSpeed === 0 && speed > 0 && state.playing && state.renderFrame) {
+    if (state.timeoutId !== null) {
+      clearTimeout(state.timeoutId);
+      state.timeoutId = null;
+    }
+    void state.renderFrame();
   }
 }

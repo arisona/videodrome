@@ -161,14 +161,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
     });
   },
-  setHydraSource: (sourceSlot: HydraSourceSlot, mediaUrl: string, mediaType: MediaType) => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE, { sourceSlot, mediaUrl, mediaType });
+  setHydraSource: (
+    sourceSlot: HydraSourceSlot,
+    mediaUrl: string,
+    mediaType: MediaType,
+    playbackSpeed: number,
+  ) => {
+    ipcRenderer.send(IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE, {
+      sourceSlot,
+      mediaUrl,
+      mediaType,
+      playbackSpeed,
+    });
   },
   onSetHydraSource: (
     callback: (data: {
       sourceSlot: HydraSourceSlot;
       mediaUrl: string;
       mediaType: MediaType;
+      playbackSpeed: number;
     }) => void,
   ) => {
     ipcRenderer.on(IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, (_event, data) => {
@@ -177,9 +188,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
         data !== null &&
         'sourceSlot' in data &&
         'mediaUrl' in data &&
-        'mediaType' in data
+        'mediaType' in data &&
+        'playbackSpeed' in data
       ) {
-        callback(data as { sourceSlot: HydraSourceSlot; mediaUrl: string; mediaType: MediaType });
+        callback(
+          data as {
+            sourceSlot: HydraSourceSlot;
+            mediaUrl: string;
+            mediaType: MediaType;
+            playbackSpeed: number;
+          },
+        );
+      }
+    });
+  },
+  setHydraSourcePlaybackSpeed: (sourceSlot: HydraSourceSlot, speed: number) => {
+    ipcRenderer.send(IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED, { sourceSlot, speed });
+  },
+  onSetHydraSourcePlaybackSpeed: (
+    callback: (data: { sourceSlot: HydraSourceSlot; speed: number }) => void,
+  ) => {
+    ipcRenderer.on(IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED, (_event, data) => {
+      if (typeof data === 'object' && data !== null && 'sourceSlot' in data && 'speed' in data) {
+        callback(data as { sourceSlot: HydraSourceSlot; speed: number });
       }
     });
   },

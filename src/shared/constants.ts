@@ -30,6 +30,7 @@ export const IPC_CHANNELS = {
   EDITOR_OUTPUT_SET_FULLSCREEN: 'editor:output-set-fullscreen',
   EDITOR_OUTPUT_GET_STATE: 'editor:output-get-state',
   EDITOR_HYDRA_SET_SOURCE: 'editor:hydra-set-source',
+  EDITOR_HYDRA_SET_PLAYBACK_SPEED: 'editor:hydra-set-playback-speed',
   EDITOR_AUDIO_ANALYZER_PARAMS: 'editor:audio-analyzer-params',
   EDITOR_PREVIEW_CHANNEL: 'editor:preview-channel',
   EDITOR_CHECK_UNSAVED_CHANGES: 'editor:check-unsaved-changes',
@@ -38,6 +39,7 @@ export const IPC_CHANNELS = {
   // Main process → Output window (commands)
   OUTPUT_CODE_RUN: 'output:code-run',
   OUTPUT_HYDRA_SET_SOURCE: 'output:hydra-set-source',
+  OUTPUT_HYDRA_SET_PLAYBACK_SPEED: 'output:hydra-set-playback-speed',
   OUTPUT_AUDIO_ANALYZER_PARAMS: 'output:audio-analyzer-params',
 
   // Output window → Main process (events)
