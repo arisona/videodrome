@@ -128,7 +128,7 @@ class MediaExplorer extends ContentExplorerBase<MediaFile> {
         preview.style.backgroundImage = `url("${previewDataUrl}")`;
         li.appendChild(preview);
       } else if (media.type !== undefined && typeof media.mtime === 'number') {
-        // Generate preview on-demand if not cached (only when we have both type and mtime)
+        // Generate preview (queueing handled internally by generatePreview)
         const { type, mtime } = media;
         void (async () => {
           const dataUrl = await this.previewGenerator.generatePreview(media.path, type, mtime);

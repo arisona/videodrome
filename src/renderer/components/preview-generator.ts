@@ -10,6 +10,7 @@ const FILMSTRIP_FRAME_COUNT = 5;
 const FILMSTRIP_FRAME_GAP = 2;
 const CACHE_LIMIT = 500;
 const DATABASE_NAME = 'videodrome-previews';
+const MAX_CONCURRENT_PREVIEWS = 10;
 
 interface PreviewCacheEntry {
   filePath: string;
@@ -20,6 +21,14 @@ interface PreviewCacheEntry {
 // Limit in-memory cache to prevent unbounded growth (tunable)
 const MAX_MEMORY_CACHE_ENTRIES = CACHE_LIMIT;
 
+interface QueuedRequest {
+  filePath: string;
+  type: MediaType;
+  mtime: number;
+  resolve: (dataUrl: string | null) => void;
+  reject: (error: Error) => void;
+}
+
 export class PreviewGenerator {
   private db: IDBDatabase | null = null;
   private dbName = DATABASE_NAME;
@@ -27,6 +36,9 @@ export class PreviewGenerator {
   private initPromise: Promise<void>;
   // Simple in-memory cache to avoid duplicate preview lookups within session
   private memoryCache = new Map<string, PreviewCacheEntry>();
+  // Queue system for preview generation
+  private requestQueue: Array<QueuedRequest> = [];
+  private activeRequests = new Set<string>();
 
   constructor() {
     this.initPromise = this.initDB();
@@ -53,42 +65,121 @@ export class PreviewGenerator {
     }
   }
 
-  async generatePreview(filePath: string, type: MediaType, mtime: number): Promise<string | null> {
+  generatePreview(filePath: string, type: MediaType, mtime: number): Promise<string | null> {
+    // Check if already in cache
+    const cached = this.memoryCache.get(filePath);
+    if (cached?.mtime === mtime) {
+      return Promise.resolve(cached.previewDataUrl);
+    }
+
+    // Check if already queued or being processed
+    const existingInQueue = this.requestQueue.find((req) => req.filePath === filePath);
+    if (existingInQueue) {
+      // Return existing promise for this file
+      return new Promise((resolve, reject) => {
+        const originalResolve = existingInQueue.resolve;
+        const originalReject = existingInQueue.reject;
+        existingInQueue.resolve = (dataUrl) => {
+          originalResolve(dataUrl);
+          resolve(dataUrl);
+        };
+        existingInQueue.reject = (error) => {
+          originalReject(error);
+          reject(error);
+        };
+      });
+    }
+
+    if (this.activeRequests.has(filePath)) {
+      // Already being processed, wait for it to complete
+      return new Promise((resolve) => {
+        const checkComplete = () => {
+          const cached = this.memoryCache.get(filePath);
+          if (cached) {
+            resolve(cached.previewDataUrl);
+          } else {
+            setTimeout(checkComplete, 100);
+          }
+        };
+        checkComplete();
+      });
+    }
+
+    // Add to queue
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({
+        filePath,
+        type,
+        mtime,
+        resolve,
+        reject,
+      });
+      this.processQueue();
+    });
+  }
+
+  getPreviewDataUrl(filePath: string): string | null {
+    return this.memoryCache.get(filePath)?.previewDataUrl ?? null;
+  }
+
+  private async _doGeneratePreview(
+    filePath: string,
+    type: MediaType,
+    mtime: number,
+  ): Promise<string | null> {
+    let previewDataUrl: string;
     try {
-      // Check if preview already exists and is up-to-date
       const cached = await this.getCachedPreview(filePath);
       if (cached?.mtime === mtime) {
         return cached.previewDataUrl;
       }
-
-      // Generate new preview
-      let previewDataUrl: string;
 
       if (type === 'image') {
         previewDataUrl = await this.generateImagePreview(filePath);
       } else if (type === 'video') {
         previewDataUrl = await this.generateVideoFilmstrip(filePath);
       } else {
-        // gif
         previewDataUrl = await this.generateGifFilmstrip(filePath);
       }
-
-      // Update cache
-      await this.saveCachedPreview({
-        filePath,
-        previewDataUrl,
-        mtime,
-      });
-
-      return previewDataUrl;
     } catch (error) {
       console.error(`Error generating preview for ${filePath}:`, error);
-      return null;
+      previewDataUrl = this.generateErrorPreview();
     }
+    await this.saveCachedPreview({
+      filePath,
+      previewDataUrl,
+      mtime,
+    });
+    return previewDataUrl;
   }
 
-  getPreviewDataUrl(filePath: string): string | null {
-    return this.memoryCache.get(filePath)?.previewDataUrl ?? null;
+  private processQueue(): void {
+    // Process queue if we have capacity
+    while (this.requestQueue.length > 0 && this.activeRequests.size < MAX_CONCURRENT_PREVIEWS) {
+      const request = this.requestQueue.shift();
+      if (!request) break;
+
+      this.activeRequests.add(request.filePath);
+
+      // Process request (intentionally not awaited to allow concurrent processing)
+      (async () => {
+        try {
+          const dataUrl = await this._doGeneratePreview(
+            request.filePath,
+            request.type,
+            request.mtime,
+          );
+          request.resolve(dataUrl);
+        } catch (error) {
+          request.reject(error instanceof Error ? error : new Error(String(error)));
+        } finally {
+          this.activeRequests.delete(request.filePath);
+          this.processQueue();
+        }
+      })().catch((error: unknown) => {
+        console.error('Unexpected error in preview queue processing:', error);
+      });
+    }
   }
 
   private async initDB(): Promise<void> {
@@ -404,5 +495,26 @@ export class PreviewGenerator {
       };
       img.src = filePathToUrl(src);
     });
+  }
+
+  private generateErrorPreview(): string {
+    const canvas = document.createElement('canvas');
+    canvas.width = PREVIEW_WIDTH;
+    canvas.height = PREVIEW_HEIGHT;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
+
+    // Fill background with dark color
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT);
+
+    // Draw 🚫 emoji in center
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🚫', PREVIEW_WIDTH / 2, PREVIEW_HEIGHT / 2);
+
+    return canvas.toDataURL('image/png');
   }
 }
