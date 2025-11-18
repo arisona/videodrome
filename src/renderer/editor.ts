@@ -17,8 +17,8 @@ import {
   hideComposer,
   getComposerState,
   setSource as setSourceInComposer,
-  setSourcePlaybackSpeed as setSourcePlaybackSpeedInComposer,
 } from './composer-tab';
+import { getGlobalSources } from './editor-state';
 import {
   configureMonacoEnvironment,
   defineVideodromeTheme,
@@ -32,13 +32,10 @@ import {
   showSources,
   hideSources,
   setSource as setSourceInSources,
-  setSourcePlaybackSpeed as setSourcePlaybackSpeedInSources,
 } from './sources-tab';
 import { filePathToUrl } from './utils/file-url';
 import { getFilename } from './utils/path';
 import { applyShortcutTooltips } from './utils/shortcuts';
-
-import type { MediaType } from '../shared/ipc-types';
 
 // Configure Monaco environment once
 configureMonacoEnvironment();
@@ -56,40 +53,6 @@ let currentMainTab: MainTab = 'compose';
 type ExplorerTab = 'patches' | 'media';
 let currentExplorerTab: ExplorerTab = 'patches';
 
-// Global sources (persisted across tab switches and sent to all Hydra instances)
-interface SourceMedia {
-  mediaPath: string;
-  mediaUrl: string;
-  mediaType: MediaType;
-}
-
-const globalSources: {
-  s0: { media: SourceMedia | null; playbackSpeed: number };
-  s1: { media: SourceMedia | null; playbackSpeed: number };
-  s2: { media: SourceMedia | null; playbackSpeed: number };
-  s3: { media: SourceMedia | null; playbackSpeed: number };
-} = {
-  s0: { media: null, playbackSpeed: 1.0 },
-  s1: { media: null, playbackSpeed: 1.0 },
-  s2: { media: null, playbackSpeed: 1.0 },
-  s3: { media: null, playbackSpeed: 1.0 },
-};
-
-// Get global sources (for sources-tab and composer-tab to use)
-export function getGlobalSources() {
-  return globalSources;
-}
-
-// Set playback speed for a specific source
-export function setPlaybackSpeed(sourceSlot: 's0' | 's1' | 's2' | 's3', speed: number): void {
-  globalSources[sourceSlot].playbackSpeed = speed;
-  if (globalSources[sourceSlot].media) {
-    const mediaType = globalSources[sourceSlot].media.mediaType;
-    setSourcePlaybackSpeedInSources(sourceSlot, mediaType, speed);
-    setSourcePlaybackSpeedInComposer(sourceSlot, mediaType, speed);
-    window.electronAPI.setHydraSourcePlaybackSpeed(sourceSlot, speed);
-  }
-}
 // Update output window button state
 function updateOutputWindowButton(isOpen: boolean) {
   const button = document.getElementById('toggle-output-btn');
@@ -682,21 +645,17 @@ void (async () => {
   initMediaExplorer({
     onMediaSelect: (mediaPath, _mediaName, sourceSlot, mediaType) => {
       // Store in global sources, but don't change playback speed
+      const globalSources = getGlobalSources();
+      const currentPlaybackSpeed = globalSources[sourceSlot].playbackSpeed;
       const mediaUrl = filePathToUrl(mediaPath);
       globalSources[sourceSlot].media = {
         mediaPath: mediaPath,
         mediaUrl: mediaUrl,
         mediaType: mediaType,
       };
-
-      setSourceInSources(sourceSlot, mediaUrl, mediaType, globalSources[sourceSlot].playbackSpeed);
-      setSourceInComposer(sourceSlot, mediaUrl, mediaType, globalSources[sourceSlot].playbackSpeed);
-      window.electronAPI.setHydraSource(
-        sourceSlot,
-        mediaUrl,
-        mediaType,
-        globalSources[sourceSlot].playbackSpeed,
-      );
+      setSourceInSources(sourceSlot, mediaUrl, mediaType, currentPlaybackSpeed);
+      setSourceInComposer(sourceSlot, mediaUrl, mediaType, currentPlaybackSpeed);
+      window.electronAPI.setHydraSource(sourceSlot, mediaUrl, mediaType, currentPlaybackSpeed);
     },
   });
 

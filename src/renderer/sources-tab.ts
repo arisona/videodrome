@@ -3,7 +3,8 @@
 import Hydra from 'hydra-synth';
 
 import { SliderControl } from './components/slider-control';
-import { getGlobalSources, setPlaybackSpeed } from './editor';
+import { setSourcePlaybackSpeed as setSourcePlaybackSpeedInComposer } from './composer-tab';
+import { applyGlobalSourcesToHydra, getGlobalSources } from './editor-state';
 import {
   disposeHydraInstance,
   executeInHydraContext,
@@ -45,7 +46,7 @@ function initHydra() {
   resizeCanvas();
 
   // Apply global sources to this Hydra instance
-  reapplyGlobalSources();
+  applyGlobalSourcesToHydra(sourcesState.hydra);
 }
 
 function resizeCanvas() {
@@ -74,36 +75,6 @@ function resizeCanvas() {
   sourcesState.hydra.setResolution(canvas.width, canvas.height);
 }
 
-// Re-apply all global sources to the Hydra instance
-function reapplyGlobalSources() {
-  if (!sourcesState?.hydra) return;
-
-  const globalSources = getGlobalSources();
-  const hydra = sourcesState.hydra;
-
-  // Set each source that exists in global state
-  Object.entries(globalSources).forEach(([slot, source]) => {
-    if (source.media) {
-      try {
-        setHydraSource(
-          hydra,
-          slot as HydraSourceSlot,
-          source.media.mediaUrl,
-          source.media.mediaType,
-        );
-        setHydraSourcePlaybackSpeed(
-          hydra,
-          slot as HydraSourceSlot,
-          source.media.mediaType,
-          source.playbackSpeed,
-        );
-      } catch (error) {
-        console.error(`Error re-applying ${slot} to Sources:`, error);
-      }
-    }
-  });
-}
-
 // Export function to allow setting sources from editor.ts
 export function setSource(
   sourceSlot: HydraSourceSlot,
@@ -121,7 +92,20 @@ export function setSource(
   }
 }
 
-export function setSourcePlaybackSpeed(
+// Set playback speed for a specific source (called from slider control callback)
+function setPlaybackSpeed(sourceSlot: HydraSourceSlot, speed: number): void {
+  const globalSources = getGlobalSources();
+  globalSources[sourceSlot].playbackSpeed = speed;
+  if (globalSources[sourceSlot].media) {
+    const mediaType = globalSources[sourceSlot].media.mediaType;
+    setSourcePlaybackSpeed(sourceSlot, mediaType, speed);
+    setSourcePlaybackSpeedInComposer(sourceSlot, mediaType, speed);
+    window.electronAPI.setHydraSourcePlaybackSpeed(sourceSlot, speed);
+  }
+}
+
+// Set playback speed in the sources tab Hydra instance
+function setSourcePlaybackSpeed(
   sourceSlot: HydraSourceSlot,
   mediaType: MediaType,
   playbackSpeed: number,
@@ -214,6 +198,9 @@ function createSliderControls() {
     sliderContainer.className = 'source-slider-container';
     sliderContainer.style.position = 'absolute';
     sliderContainer.style.pointerEvents = 'auto';
+    sliderContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.75)';
+    sliderContainer.style.padding = '8px 8px';
+    sliderContainer.style.borderRadius = '4px';
     slidersWrapper.appendChild(sliderContainer);
 
     const slider = new SliderControl(sliderContainer, {
@@ -264,10 +251,10 @@ function positionSliders() {
   // Position each slider at bottom-left of its quadrant
   // Hydra layout: s0=top-left, s1=bottom-left, s2=top-right, s3=bottom-right
   const positions = [
-    { slot: 's0', x: canvasLeft + 8, y: canvasTop + quadrantHeight - 40 }, // s0: Top-left
-    { slot: 's1', x: canvasLeft + 8, y: canvasTop + renderedHeight - 40 }, // s1: Bottom-left
-    { slot: 's2', x: canvasLeft + quadrantWidth + 8, y: canvasTop + quadrantHeight - 40 }, // s2: Top-right
-    { slot: 's3', x: canvasLeft + quadrantWidth + 8, y: canvasTop + renderedHeight - 40 }, // s3: Bottom-right
+    { slot: 's0', x: canvasLeft + 8, y: canvasTop + quadrantHeight - 54 }, // s0: Top-left
+    { slot: 's1', x: canvasLeft + 8, y: canvasTop + renderedHeight - 54 }, // s1: Bottom-left
+    { slot: 's2', x: canvasLeft + quadrantWidth + 8, y: canvasTop + quadrantHeight - 54 }, // s2: Top-right
+    { slot: 's3', x: canvasLeft + quadrantWidth + 8, y: canvasTop + renderedHeight - 54 }, // s3: Bottom-right
   ];
 
   positions.forEach(({ slot, x, y }) => {

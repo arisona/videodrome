@@ -11,7 +11,7 @@ import {
   removeAudioDrawerListener,
 } from './components/audio-drawer';
 import { PatchPanel } from './components/patch-panel';
-import { getGlobalSources } from './editor';
+import { applyGlobalSourcesToHydra } from './editor-state';
 import {
   executeInHydraContext,
   disposeHydraInstance,
@@ -56,7 +56,7 @@ function initHydra() {
   resizeCanvas();
 
   // Apply global sources to this Hydra instance
-  reapplyGlobalSources();
+  applyGlobalSourcesToHydra(composerState.hydra);
 
   // Apply current audio settings to this Hydra instance
   applyToHydraInstance(composerState.hydra);
@@ -89,36 +89,6 @@ function resizeCanvas() {
   canvas.height = Math.floor(size);
 
   composerState.hydra.setResolution(canvas.width, canvas.height);
-}
-
-// Re-apply all global sources to the Hydra instance
-function reapplyGlobalSources() {
-  if (!composerState?.hydra) return;
-
-  const globalSources = getGlobalSources();
-  const hydra = composerState.hydra;
-
-  // Set each source that exists in global state
-  Object.entries(globalSources).forEach(([slot, source]) => {
-    if (source.media) {
-      try {
-        setHydraSource(
-          hydra,
-          slot as HydraSourceSlot,
-          source.media.mediaUrl,
-          source.media.mediaType,
-        );
-        setHydraSourcePlaybackSpeed(
-          hydra,
-          slot as HydraSourceSlot,
-          source.media.mediaType,
-          source.playbackSpeed,
-        );
-      } catch (error) {
-        console.error(`Error re-applying ${slot} to Composer:`, error);
-      }
-    }
-  });
 }
 
 // Export function to allow setting sources from editor.ts
