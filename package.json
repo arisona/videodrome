@@ -9,6 +9,7 @@
     "build:main": "tsc -p tsconfig.main.json",
     "build:preload": "esbuild src/main/preload.ts --bundle --platform=node --format=cjs --outfile=dist/main/preload.js --external:electron --packages=external",
     "build:renderer": "vite build",
+    "start": "electron .",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "type-check": "npm run type-check:main && npm run type-check:renderer",
@@ -31,7 +32,7 @@
     "@types/path-browserify": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
-    "electron": "^39.2.1",
+    "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
@@ -48,6 +49,7 @@
   },
   "dependencies": {
     "hydra-synth": "^1.4.0",
+    "material-symbols": "^0.39.4",
     "monaco-editor": "^0.54.0",
     "path-browserify": "^1.0.1"
   },

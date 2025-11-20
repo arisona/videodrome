@@ -72,7 +72,7 @@
   height: 40px;
   display: flex;
   align-items: center;
-  gap: var(--gap-medium);
+  gap: var(--gap-small);
 }
 
 .search-input-container {
@@ -93,7 +93,7 @@
   font-size: 12px;
   font-family: inherit;
   outline: none;
-  height: 24px;
+  height: 28px;
 }
 
 .search-clear-btn {
@@ -138,13 +138,13 @@
   background: var(--border-color);
   color: var(--text-secondary);
   border: none;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 2px;
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
-  padding: 0;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -301,13 +301,7 @@ export function initPerformer() {
     editorContainer: editorAContainer,
     statusElement: requireElementById('panel-a-status'),
     fileNameElement: requireElementById('panel-a-file-name'),
-    buttons: {
-      run: document.getElementById('run-a-btn'),
-      new: document.getElementById('new-a-btn'),
-      save: document.getElementById('save-a-btn'),
-      saveAs: document.getElementById('save-as-a-btn'),
-      revert: document.getElementById('revert-a-btn'),
-    },
+    actionsContainer: requireElementById('panel-a-actions'),
     initialValue: '// empty',
     readOnly: false,
     onRun: () => {
@@ -349,13 +343,7 @@ export function initPerformer() {
     editorContainer: editorBContainer,
     statusElement: requireElementById('panel-b-status'),
     fileNameElement: requireElementById('panel-b-file-name'),
-    buttons: {
-      run: document.getElementById('run-b-btn'),
-      new: document.getElementById('new-b-btn'),
-      save: document.getElementById('save-b-btn'),
-      saveAs: document.getElementById('save-as-b-btn'),
-      revert: document.getElementById('revert-b-btn'),
-    },
+    actionsContainer: requireElementById('panel-b-actions'),
     initialValue: '// empty',
     readOnly: false,
     onRun: () => {

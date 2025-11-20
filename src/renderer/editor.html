@@ -87,13 +87,14 @@
       }
 
       button.icon-btn {
-        width: 24px;
-        height: 24px;
-        padding: 0;
+        width: 28px;
+        height: 28px;
+        padding: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 14px;
+        color: var(--text-secondary);
       }
 
       button.icon-btn:hover {
@@ -136,7 +137,7 @@
 
       #toolbar-icons {
         display: flex;
-        gap: var(--gap-tight);
+        gap: var(--gap-small);
         padding: var(--gap-small) var(--gap-medium);
         align-items: center;
       }
@@ -266,10 +267,13 @@
         background: var(--border-color);
         color: var(--text-secondary);
         border: none;
-        padding: 6px 12px;
+        padding: 4px;
         border-radius: 2px;
         cursor: pointer;
         font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       .editor-btn:hover {
@@ -673,11 +677,13 @@
             <button
               id="toggle-output-btn"
               class="icon-btn secondary"
-              title="Toggle output window visibility"
+              title="Show or hide output window"
             >
-              🖥️
+              <span class="material-symbols-outlined" style="font-size: 20px">monitor</span>
             </button>
-            <button id="settings-btn" class="icon-btn secondary" title="Open settings">⚙️</button>
+            <button id="settings-btn" class="icon-btn secondary" title="Open settings">
+              <span class="material-symbols-outlined" style="font-size: 20px">settings</span>
+            </button>
           </div>
         </div>
 
@@ -732,7 +738,7 @@
                   </button>
                 </div>
                 <button id="regenerate-previews-btn" title="Regenerate all media previews">
-                  ↻
+                  <span class="material-symbols-outlined" style="font-size: 20px">refresh</span>
                 </button>
               </div>
               <div id="sidebar-content">
@@ -768,48 +774,7 @@
                       <span class="editor-file-name" id="composer-file-name">Untitled</span>
                       <span class="editor-status" id="composer-status">Ready</span>
                     </div>
-                    <div class="editor-actions">
-                      <button
-                        class="editor-btn"
-                        id="composer-run-btn"
-                        title="Run patch"
-                        data-shortcut="Cmd+Enter"
-                      >
-                        Run
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="composer-new-btn"
-                        title="New patch"
-                        data-shortcut="Cmd+N"
-                      >
-                        New
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="composer-save-btn"
-                        title="Save patch"
-                        data-shortcut="Cmd+S"
-                      >
-                        Save
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="composer-save-as-btn"
-                        title="Save patch as"
-                        data-shortcut="Shift+Cmd+S"
-                      >
-                        Save As...
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="composer-revert-btn"
-                        title="Revert patch"
-                        data-shortcut="Cmd+R"
-                      >
-                        Revert
-                      </button>
-                    </div>
+                    <div class="editor-actions" id="composer-actions"></div>
                   </div>
                   <div id="editor-composer-monaco"></div>
                 </div>
@@ -838,48 +803,7 @@
                       <span class="editor-file-name" id="panel-a-file-name">A: Untitled</span>
                       <span class="editor-status" id="panel-a-status">Ready</span>
                     </div>
-                    <div class="editor-actions">
-                      <button
-                        class="editor-btn"
-                        id="run-a-btn"
-                        title="Run this slot"
-                        data-shortcut="Cmd+Enter"
-                      >
-                        Run
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="new-a-btn"
-                        title="New patch"
-                        data-shortcut="Cmd+N"
-                      >
-                        New
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="save-a-btn"
-                        title="Save patch"
-                        data-shortcut="Cmd+S"
-                      >
-                        Save
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="save-as-a-btn"
-                        title="Save as new patch"
-                        data-shortcut="Shift+Cmd+S"
-                      >
-                        Save As...
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="revert-a-btn"
-                        title="Revert patch"
-                        data-shortcut="Cmd+R"
-                      >
-                        Revert
-                      </button>
-                    </div>
+                    <div class="editor-actions" id="panel-a-actions"></div>
                   </div>
                   <div class="editor-performer-panel-body">
                     <div class="editor-monaco-container" id="editor-a"></div>
@@ -901,48 +825,7 @@
                       <span class="editor-file-name" id="panel-b-file-name">B: Untitled</span>
                       <span class="editor-status" id="panel-b-status">Ready</span>
                     </div>
-                    <div class="editor-actions">
-                      <button
-                        class="editor-btn"
-                        id="run-b-btn"
-                        title="Run this slot"
-                        data-shortcut="Cmd+Enter"
-                      >
-                        Run
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="new-b-btn"
-                        title="New patch"
-                        data-shortcut="Cmd+N"
-                      >
-                        New
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="save-b-btn"
-                        title="Save patch"
-                        data-shortcut="Cmd+S"
-                      >
-                        Save
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="save-as-b-btn"
-                        title="Save patch as"
-                        data-shortcut="Shift+Cmd+S"
-                      >
-                        Save As...
-                      </button>
-                      <button
-                        class="editor-btn"
-                        id="revert-b-btn"
-                        title="Revert patch"
-                        data-shortcut="Cmd+R"
-                      >
-                        Revert
-                      </button>
-                    </div>
+                    <div class="editor-actions" id="panel-b-actions"></div>
                   </div>
                   <div class="editor-performer-panel-body">
                     <div class="editor-monaco-container" id="editor-b"></div>

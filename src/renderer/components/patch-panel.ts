@@ -26,6 +26,17 @@ export interface LoadOptions {
 }
 
 /**
+ * Button configuration for creating patch panel buttons
+ */
+interface ButtonConfig {
+  id: string;
+  icon: string;
+  label: string;
+  title: string;
+  shortcut?: string;
+}
+
+/**
  * Configuration for PatchPanel component
  */
 export interface PatchPanelConfig {
@@ -33,15 +44,7 @@ export interface PatchPanelConfig {
   editorContainer: HTMLElement;
   statusElement: HTMLElement;
   fileNameElement: HTMLElement;
-
-  // Optional button elements (wired automatically if provided)
-  buttons?: {
-    run?: HTMLElement | null;
-    new?: HTMLElement | null;
-    save?: HTMLElement | null;
-    saveAs?: HTMLElement | null;
-    revert?: HTMLElement | null;
-  };
+  actionsContainer: HTMLElement;
 
   // Editor configuration
   initialValue?: string;
@@ -82,8 +85,20 @@ export class PatchPanel {
   private originalContent = '';
   private _isDirty = false;
 
+  // Button elements
+  private buttons: {
+    run: HTMLButtonElement;
+    new: HTMLButtonElement;
+    save: HTMLButtonElement;
+    saveAs: HTMLButtonElement;
+    revert: HTMLButtonElement;
+  };
+
   constructor(config: PatchPanelConfig) {
     this.config = config;
+
+    // Create buttons programmatically
+    this.buttons = this.createButtons();
 
     // Create Monaco editor panel
     this.editorPanel = new MonacoEditorPanel({
@@ -109,7 +124,7 @@ export class PatchPanel {
       this.updateDirtyState();
     });
 
-    // Wire up buttons
+    // Wire up button event handlers
     this.wireButtons();
 
     // Register context menu actions
@@ -451,40 +466,120 @@ export class PatchPanel {
   }
 
   /**
+   * Create all buttons programmatically and add them to the actions container
+   */
+  private createButtons(): {
+    run: HTMLButtonElement;
+    new: HTMLButtonElement;
+    save: HTMLButtonElement;
+    saveAs: HTMLButtonElement;
+    revert: HTMLButtonElement;
+  } {
+    const prefix = this.config.fileNamePrefix?.replace(':', '').trim().toLowerCase() ?? '';
+    const idPrefix = prefix ? `${prefix}-` : 'composer-';
+
+    const buttons = {
+      run: this.createButton({
+        id: `${idPrefix}run-btn`,
+        icon: 'play_circle',
+        label: 'Run',
+        title: 'Run patch',
+        shortcut: 'Cmd+Enter',
+      }),
+      new: this.createButton({
+        id: `${idPrefix}new-btn`,
+        icon: 'note_add',
+        label: 'New',
+        title: 'New patch',
+        shortcut: 'Cmd+N',
+      }),
+      save: this.createButton({
+        id: `${idPrefix}save-btn`,
+        icon: 'save',
+        label: 'Save',
+        title: 'Save patch',
+        shortcut: 'Cmd+S',
+      }),
+      saveAs: this.createButton({
+        id: `${idPrefix}save-as-btn`,
+        icon: 'save_as',
+        label: 'Save As...',
+        title: 'Save patch as',
+        shortcut: 'Shift+Cmd+S',
+      }),
+      revert: this.createButton({
+        id: `${idPrefix}revert-btn`,
+        icon: 'refresh',
+        label: 'Revert',
+        title: 'Revert patch',
+        shortcut: 'Cmd+R',
+      }),
+    };
+
+    // Append all buttons to the actions container
+    const container = this.config.actionsContainer;
+    container.appendChild(buttons.run);
+    container.appendChild(buttons.new);
+    container.appendChild(buttons.save);
+    container.appendChild(buttons.saveAs);
+    container.appendChild(buttons.revert);
+
+    return buttons;
+  }
+
+  /**
    * Wire up button event handlers
    */
   private wireButtons(): void {
-    const buttons = this.config.buttons;
-    if (!buttons) return;
+    this.buttons.run.addEventListener('click', () => {
+      this.config.onRun();
+    });
 
-    if (buttons.run) {
-      buttons.run.addEventListener('click', () => {
-        this.config.onRun();
-      });
+    this.buttons.new.addEventListener('click', () => {
+      void this.newPatch();
+    });
+
+    this.buttons.save.addEventListener('click', () => {
+      void this.save();
+    });
+
+    this.buttons.saveAs.addEventListener('click', () => {
+      this.saveAs();
+    });
+
+    this.buttons.revert.addEventListener('click', () => {
+      void this.revert();
+    });
+  }
+
+  /**
+   * Create a button element with Material Symbol icon
+   */
+  private createButton(config: ButtonConfig, withLabel = false): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.className = 'editor-btn';
+    button.id = config.id;
+    button.title = config.title;
+    if (config.shortcut) {
+      button.dataset.shortcut = config.shortcut;
     }
 
-    if (buttons.new) {
-      buttons.new.addEventListener('click', () => {
-        void this.newPatch();
-      });
+    // Create icon span
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined';
+    icon.textContent = config.icon;
+    icon.style.fontSize = '20px';
+    if (withLabel) {
+      icon.style.marginRight = '4px';
     }
+    button.appendChild(icon);
 
-    if (buttons.save) {
-      buttons.save.addEventListener('click', () => {
-        void this.save();
-      });
+    // Create label span
+    if (withLabel) {
+      const label = document.createElement('span');
+      label.textContent = config.label;
+      button.appendChild(label);
     }
-
-    if (buttons.saveAs) {
-      buttons.saveAs.addEventListener('click', () => {
-        this.saveAs();
-      });
-    }
-
-    if (buttons.revert) {
-      buttons.revert.addEventListener('click', () => {
-        void this.revert();
-      });
-    }
+    return button;
   }
 }

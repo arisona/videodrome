@@ -1,5 +1,7 @@
 /* eslint-env browser */
 
+import 'material-symbols/outlined.css';
+
 import { FILE_EXTENSIONS } from '../shared/constants';
 
 import { initAudioDrawer } from './components/audio-drawer';
