@@ -135,7 +135,7 @@
 }
 
 #regenerate-previews-btn {
-  background: var(--border-color);
+  background: none;
   color: var(--text-secondary);
   border: none;
   width: 28px;
@@ -157,7 +157,7 @@
 }
 
 #regenerate-previews-btn:hover {
-  background: var(--hover-border);
+  background: var(--hover-bg);
 }
 
 #regenerate-previews-btn:active {

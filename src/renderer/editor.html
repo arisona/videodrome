@@ -87,6 +87,7 @@
       }
 
       button.icon-btn {
+        background: none;
         width: 28px;
         height: 28px;
         padding: 4px;
@@ -98,7 +99,7 @@
       }
 
       button.icon-btn:hover {
-        background: var(--hover-border);
+        background: var(--hover-bg);
       }
 
       button.icon-btn:active {
@@ -264,7 +265,7 @@
       }
 
       .editor-btn {
-        background: var(--border-color);
+        background: none;
         color: var(--text-secondary);
         border: none;
         padding: 4px;
@@ -277,7 +278,7 @@
       }
 
       .editor-btn:hover {
-        background: var(--hover-border);
+        background: var(--hover-bg);
       }
 
       .editor-btn:active {
@@ -674,14 +675,10 @@
 
           <!-- Icon buttons (right) -->
           <div id="toolbar-icons">
-            <button
-              id="toggle-output-btn"
-              class="icon-btn secondary"
-              title="Show or hide output window"
-            >
+            <button id="toggle-output-btn" class="editor-btn" title="Show or hide output window">
               <span class="material-symbols-outlined" style="font-size: 20px">monitor</span>
             </button>
-            <button id="settings-btn" class="icon-btn secondary" title="Open settings">
+            <button id="settings-btn" class="editor-btn" title="Open settings">
               <span class="material-symbols-outlined" style="font-size: 20px">settings</span>
             </button>
           </div>
