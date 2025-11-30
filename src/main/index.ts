@@ -388,7 +388,6 @@ ipcMain.handle(IPC_CHANNELS.EDITOR_OUTPUT_GET_STATE, () => {
   return outputWindow?.isVisible() ?? false;
 });
 
-// New simplified settings API
 ipcMain.handle(IPC_CHANNELS.SETTINGS_GET_DOCUMENTS_PATH, () => {
   return getDocumentsPath();
 });
@@ -420,11 +419,12 @@ ipcMain.handle(
 
 ipcMain.handle(
   IPC_CHANNELS.EDITOR_DIRECTORY_SELECT,
-  async (_event, title: string, defaultPath?: string) => {
+  async (_event, title: string, _defaultPath?: string) => {
+    // TODO: for some reason defaultPath isn't working as expected, investigate later
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],
       title: title,
-      defaultPath: defaultPath,
+      // defaultPath: defaultPath,
     });
 
     if (!result.canceled && result.filePaths.length > 0) {
