@@ -1,8 +1,8 @@
 /* eslint-env browser */
 
 import * as monaco from 'monaco-editor';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker.js?worker';
+import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker.js?worker';
 
 import hydraTypeDefinitions from './hydra/hydra-globals.d.ts?raw';
 
@@ -15,11 +15,11 @@ const EDITOR_CONFIG = {
 
 export function configureMonacoEnvironment(): void {
   self.MonacoEnvironment = {
-    getWorker(moduleId: string, label: string) {
+    getWorker(_moduleId: string, label: string) {
       if (label === 'typescript' || label === 'javascript') {
-        return new tsWorker();
+        return new TsWorker();
       }
-      return new editorWorker();
+      return new EditorWorker();
     },
   };
 }
@@ -48,25 +48,25 @@ export function defineVideodromeTheme(): void {
  */
 export function registerHydraTypeDefinitions(): monaco.IDisposable {
   // Configure TypeScript compiler options for JavaScript
-  monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-    target: monaco.languages.typescript.ScriptTarget.ES2020,
+  monaco.typescript.javascriptDefaults.setCompilerOptions({
+    target: monaco.typescript.ScriptTarget.ES2020,
     allowNonTsExtensions: true,
     allowJs: true,
     checkJs: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    module: monaco.languages.typescript.ModuleKind.CommonJS,
+    moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
+    module: monaco.typescript.ModuleKind.CommonJS,
     noEmit: true,
     noLib: false, // Important: include standard library
   });
 
   // Enable diagnostics (errors and warnings)
-  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+  monaco.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: false,
     noSyntaxValidation: false,
   });
 
   // Register Hydra type definitions
-  const disposable = monaco.languages.typescript.javascriptDefaults.addExtraLib(
+  const disposable = monaco.typescript.javascriptDefaults.addExtraLib(
     hydraTypeDefinitions,
     'file:///node_modules/@types/hydra/index.d.ts',
   );

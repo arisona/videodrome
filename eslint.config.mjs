@@ -162,4 +162,13 @@ export default [
       'import/no-default-export': 'off',
     },
   },
+
+  // Override for files using Vite worker imports
+  {
+    files: ['src/renderer/monaco-setup.ts'],
+    rules: {
+      // Vite's ?worker suffix is a build-time transformation that ESLint can't resolve
+      'import/default': 'off',
+    },
+  },
 ];

@@ -30,9 +30,9 @@
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/path-browserify": "^1.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.47.0",
-    "@typescript-eslint/parser": "^8.47.0",
-    "electron": "^39.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
+    "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.27.0",
     "eslint": "^9.39.1",
@@ -43,14 +43,14 @@
     "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-security": "^3.0.1",
     "eslint-plugin-unused-imports": "^4.3.0",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.3",
     "typescript": "^5.9.3",
-    "vite": "^7.2.2"
+    "vite": "^7.2.4"
   },
   "dependencies": {
     "hydra-synth": "^1.4.0",
-    "material-symbols": "^0.39.4",
-    "monaco-editor": "^0.54.0",
+    "material-symbols": "^0.40.0",
+    "monaco-editor": "^0.55.1",
     "path-browserify": "^1.0.1"
   },
   "build": {

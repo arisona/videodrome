@@ -5,3 +5,9 @@ declare module '*.d.ts?raw' {
   const content: string;
   export default content;
 }
+
+// Type declarations for Vite's ?worker import suffix
+declare module '*?worker' {
+  const WorkerFactory: new () => Worker;
+  export default WorkerFactory;
+}
