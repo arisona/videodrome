@@ -4,11 +4,15 @@
   "description": "Standalone video synthesizer based on Hydra",
   "main": "dist/main/index.js",
   "scripts": {
-    "dev": "npm run build && electron .",
+    "dev": "npm run dev:setup && concurrently -n vite,electron -c blue,green \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:setup": "npm run build:main && npm run build:preload",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173/editor.html && cross-env NODE_ENV=development electron .",
     "build": "npm run type-check && npm run build:main && npm run build:preload && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:preload": "esbuild src/main/preload.ts --bundle --platform=node --format=cjs --outfile=dist/main/preload.js --external:electron --packages=external",
     "build:renderer": "vite build",
+    "prod": "npm run build && cross-env NODE_ENV=production electron .",
     "start": "electron .",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
@@ -32,6 +36,8 @@
     "@types/path-browserify": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
     "esbuild": "^0.27.0",
@@ -45,7 +51,8 @@
     "eslint-plugin-unused-imports": "^4.3.0",
     "prettier": "^3.7.3",
     "typescript": "^5.9.3",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wait-on": "^9.0.3"
   },
   "dependencies": {
     "hydra-synth": "^1.4.0",
