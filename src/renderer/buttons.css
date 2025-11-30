@@ -1,0 +1,150 @@
+/**
+ * Button Styles
+ *
+ * Organized button variants:
+ * - .btn.primary: Default action button (blue)
+ * - .btn.secondary: Secondary action button (gray)
+ * - .btn.icon: Icon-only button (transparent, flex layout)
+ * - .btn.icon-active: Icon button in active state
+ *
+ * All buttons use the .btn base class
+ */
+
+/* Base button reset */
+.btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Primary Button (Default Action)
+   ============================================ */
+
+.btn.primary {
+  background: var(--primary-blue);
+  color: white;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn.primary:hover {
+  background: var(--primary-blue-hover);
+}
+
+.btn.primary:active {
+  background: var(--primary-blue-active);
+}
+
+.btn.primary:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Secondary Button (Less prominent actions)
+   ============================================ */
+
+.btn.secondary {
+  background: var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn.secondary:hover {
+  background: var(--hover-border);
+}
+
+.btn.secondary:active {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.btn.secondary:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Icon Button (Toolbar, no background)
+   ============================================ */
+
+.btn.icon {
+  background: none;
+  color: var(--text-secondary);
+  padding: 4px;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+}
+
+.btn.icon:hover {
+  background: var(--hover-bg);
+}
+
+.btn.icon:active {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.btn.icon:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 1px;
+}
+
+/* ============================================
+   Clear Button (Search/input clearing)
+   ============================================ */
+
+.btn.clear {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 14px;
+  display: none;
+  border-radius: 2px;
+}
+
+.btn.clear:hover {
+  background: var(--hover-border);
+  color: var(--text-primary);
+}
+
+.btn.clear.visible {
+  display: flex;
+}
+
+/* ============================================
+   Browse Button (File picker actions)
+   ============================================ */
+
+.btn.browse {
+  background: var(--border-color);
+  color: var(--text-primary);
+  padding: 6px var(--gap-large);
+  font-size: 13px;
+}
+
+.btn.browse:hover {
+  background: var(--hover-border);
+}
+
+.btn.browse:active {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.btn.browse:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}

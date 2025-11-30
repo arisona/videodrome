@@ -1,0 +1,64 @@
+/**
+ * Form Element Styles
+ *
+ * Organized form input variants:
+ * - .form-input: Base class for text inputs, number inputs, and selects
+ * - .form-input.text: Text input specific styles
+ * - .form-input.number: Number input specific styles
+ * - .form-input.select: Select dropdown specific styles
+ * - .form-checkbox: Checkbox input styles
+ *
+ * All form elements should use explicit classes instead of element selectors
+ */
+
+/* ============================================
+   Base Form Input (text, number, select)
+   ============================================ */
+
+.form-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px var(--gap-medium);
+  border-radius: 2px;
+  font-size: 13px;
+  font-family: inherit;
+  flex: 1;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--primary-blue);
+}
+
+.form-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+/* Read-only inputs */
+.form-input[readonly] {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* ============================================
+   Checkbox Inputs
+   ============================================ */
+
+.form-checkbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--primary-blue);
+}
+
+/* ============================================
+   Number Input Specific
+   ============================================ */
+
+/* Number inputs in number groups (side-by-side) */
+.number-group .form-input {
+  width: 100%;
+}

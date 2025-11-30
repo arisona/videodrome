@@ -96,32 +96,10 @@
   height: 28px;
 }
 
+/* Search clear button positioning */
 .search-clear-btn {
   position: absolute;
   right: var(--gap-small);
-  background: transparent;
-  color: var(--text-muted);
-  border: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 2px;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.search-clear-btn:hover {
-  background: var(--hover-border);
-  color: var(--text-primary);
-}
-
-.search-clear-btn.visible {
-  display: flex;
 }
 
 #patch-search-input:focus,

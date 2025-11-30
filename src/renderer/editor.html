@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="./monaco-setup.css" />
     <link rel="stylesheet" href="./components/tooltip.css" />
     <link rel="stylesheet" href="./components/modal.css" />
+    <link rel="stylesheet" href="./buttons.css" />
+    <link rel="stylesheet" href="./forms.css" />
     <style>
       :root {
         /* Spacing system */
@@ -53,62 +55,6 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
-      }
-
-      button {
-        background: var(--primary-blue);
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 2px;
-        cursor: pointer;
-        font-size: 13px;
-      }
-
-      button:hover {
-        background: var(--primary-blue-hover);
-      }
-
-      button:active {
-        background: var(--primary-blue-active);
-      }
-
-      button:focus-visible {
-        outline: 2px solid var(--primary-blue);
-        outline-offset: 2px;
-      }
-
-      button.secondary {
-        background: var(--border-color);
-      }
-
-      button.secondary:hover {
-        background: var(--hover-border);
-      }
-
-      button.icon-btn {
-        background: none;
-        width: 28px;
-        height: 28px;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        color: var(--text-secondary);
-      }
-
-      button.icon-btn:hover {
-        background: var(--hover-bg);
-      }
-
-      button.icon-btn:active {
-        background: var(--primary-blue);
-      }
-
-      button.icon-btn:focus-visible {
-        outline: 2px solid var(--primary-blue);
-        outline-offset: 1px;
       }
 
       #content {
@@ -262,32 +208,6 @@
         gap: var(--gap-small);
         flex-shrink: 0;
         overflow: hidden;
-      }
-
-      .editor-btn {
-        background: none;
-        color: var(--text-secondary);
-        border: none;
-        padding: 4px;
-        border-radius: 2px;
-        cursor: pointer;
-        font-size: 11px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .editor-btn:hover {
-        background: var(--hover-bg);
-      }
-
-      .editor-btn:active {
-        background: var(--primary-blue);
-      }
-
-      .editor-btn:focus-visible {
-        outline: 2px solid var(--primary-blue);
-        outline-offset: 2px;
       }
 
       /* Composer tab */
@@ -519,30 +439,6 @@
         gap: var(--gap-medium);
       }
 
-      input[type='text'],
-      input[type='number'],
-      select {
-        flex: 1;
-        background: var(--bg-input);
-        border: 1px solid var(--border-color);
-        color: var(--text-secondary);
-        padding: 6px var(--gap-medium);
-        border-radius: 2px;
-        font-size: 13px;
-        font-family: inherit;
-      }
-
-      input[type='text']:focus,
-      input[type='number']:focus,
-      select:focus {
-        outline: none;
-        border-color: var(--primary-blue);
-      }
-
-      .browse-btn {
-        padding: 6px var(--gap-large);
-      }
-
       .number-group {
         display: flex;
         gap: var(--gap-large);
@@ -552,22 +448,11 @@
         flex: 1;
       }
 
-      .number-group input[type='number'] {
-        width: 100%;
-      }
-
       .checkbox-item {
         display: flex;
         align-items: center;
         gap: var(--gap-medium);
         margin-bottom: 12px;
-      }
-
-      input[type='checkbox'] {
-        width: 14px;
-        height: 14px;
-        cursor: pointer;
-        flex-shrink: 0;
       }
 
       .checkbox-item label {
@@ -675,10 +560,10 @@
 
           <!-- Icon buttons (right) -->
           <div id="toolbar-icons">
-            <button id="toggle-output-btn" class="editor-btn" title="Show or hide output window">
+            <button id="toggle-output-btn" class="btn icon" title="Show or hide output window">
               <span class="material-symbols-outlined" style="font-size: 20px">monitor</span>
             </button>
-            <button id="settings-btn" class="editor-btn" title="Open settings">
+            <button id="settings-btn" class="btn icon" title="Open settings">
               <span class="material-symbols-outlined" style="font-size: 20px">settings</span>
             </button>
           </div>
@@ -701,7 +586,7 @@
                     autocomplete="off"
                   />
                   <button
-                    class="search-clear-btn"
+                    class="btn clear search-clear-btn"
                     id="patch-search-clear"
                     title="Clear search (ESC)"
                   >
@@ -727,14 +612,14 @@
                     autocomplete="off"
                   />
                   <button
-                    class="search-clear-btn"
+                    class="btn clear search-clear-btn"
                     id="media-search-clear"
                     title="Clear search (ESC)"
                   >
                     ×
                   </button>
                 </div>
-                <button id="regenerate-previews-btn" title="Regenerate all media previews">
+                <button id="regenerate-previews-btn" class="btn icon" title="Regenerate all media previews">
                   <span class="material-symbols-outlined" style="font-size: 20px">refresh</span>
                 </button>
               </div>
@@ -844,7 +729,7 @@
                   class="editor-performer-compositor-group editor-performer-compositor-main-selector"
                 >
                   <label class="editor-performer-compositor-label">Composite</label>
-                  <select id="editor-performer-compositor-panel">
+                  <select class="form-input" id="editor-performer-compositor-panel">
                     <!-- Will be populated dynamically from composite-functions.ts -->
                   </select>
                 </div>
@@ -878,7 +763,7 @@
             <div id="settings-tab" class="main-view">
               <div id="settings-toolbar">
                 <h1>Settings</h1>
-                <button id="settings-restore-defaults-btn" class="secondary">
+                <button id="settings-restore-defaults-btn" class="btn secondary">
                   Restore Defaults
                 </button>
               </div>
@@ -888,14 +773,14 @@
                     <h2>Parameter Control</h2>
                     <div class="setting-item">
                       <div class="checkbox-item">
-                        <input type="checkbox" id="settings-parameter-control-enabled" checked />
+                        <input type="checkbox" class="form-checkbox" id="settings-parameter-control-enabled" checked />
                         <label for="settings-parameter-control-enabled"
                           >Enable parameter control</label
                         >
                       </div>
                     </div>
                     <div class="checkbox-item">
-                      <input type="checkbox" id="settings-parameter-control-drag-lock" checked />
+                      <input type="checkbox" class="form-checkbox" id="settings-parameter-control-drag-lock" checked />
                       <label for="settings-parameter-control-drag-lock"
                         >Mouse drag lock (hides cursor during drag)</label
                       >
@@ -907,6 +792,7 @@
                       </div>
                       <input
                         type="number"
+                        class="form-input number"
                         id="settings-parameter-control-sensitivity"
                         min="1"
                         max="100"
@@ -924,7 +810,7 @@
                       <div class="description">
                         Audio device for reactive visuals
                       </div>
-                      <select id="settings-audio-device">
+                      <select class="form-input" id="settings-audio-device">
                         <option value="">Default audio input</option>
                       </select>
                     </div>
@@ -939,8 +825,8 @@
                         Location where your Hydra patch files (.js) are stored
                       </div>
                       <div class="input-group">
-                        <input type="text" id="settings-patch-directory" readonly />
-                        <button class="browse-btn secondary" id="settings-browse-patch-dir">
+                        <input type="text" class="form-input" id="settings-patch-directory" readonly />
+                        <button class="btn browse" id="settings-browse-patch-dir">
                           Browse...
                         </button>
                       </div>
@@ -951,8 +837,8 @@
                         Location where your video and media files are stored
                       </div>
                       <div class="input-group">
-                        <input type="text" id="settings-media-directory" readonly />
-                        <button class="browse-btn secondary" id="settings-browse-media-dir">
+                        <input type="text" class="form-input" id="settings-media-directory" readonly />
+                        <button class="btn browse" id="settings-browse-media-dir">
                           Browse...
                         </button>
                       </div>

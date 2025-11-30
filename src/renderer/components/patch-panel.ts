@@ -557,7 +557,7 @@ export class PatchPanel {
    */
   private createButton(config: ButtonConfig, withLabel = false): HTMLButtonElement {
     const button = document.createElement('button');
-    button.className = 'editor-btn';
+    button.className = 'btn icon';
     button.id = config.id;
     button.title = config.title;
     if (config.shortcut) {
