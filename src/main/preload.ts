@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 
 import { IPC_CHANNELS } from '../shared/constants';
+import { typedInvoke, typedOn, typedSend } from '../shared/ipc-channels';
 
 import type {
   AudioAnalyzerParams,
@@ -18,15 +19,6 @@ const previewFrameListeners: Array<
   (bitmapA: PreviewFrame | null, bitmapB: PreviewFrame | null) => void
 > = [];
 const previewPortReadyListeners: Array<() => void> = [];
-
-function isResultsPayload(value: unknown): value is ResultsPayload {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return 'resultA' in candidate && 'resultB' in candidate;
-}
 
 function handlePreviewChannel(event: IpcRendererEvent) {
   if (event.ports.length === 0) {
@@ -62,61 +54,60 @@ ipcRenderer.on(IPC_CHANNELS.EDITOR_PREVIEW_CHANNEL, handlePreviewChannel);
 
 contextBridge.exposeInMainWorld('electronAPI', {
   runCode: (code: string) => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_CODE_RUN, code);
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_CODE_RUN, code);
   },
   onRunCode: (callback: (code: string) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.OUTPUT_CODE_RUN, (_event, code) => {
-      if (typeof code === 'string') {
-        callback(code);
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_CODE_RUN, callback);
   },
   toggleOutputWindow: () => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_OUTPUT_TOGGLE);
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_OUTPUT_TOGGLE);
   },
   setOutputWindowFullscreen: () => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_OUTPUT_SET_FULLSCREEN);
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_OUTPUT_SET_FULLSCREEN);
   },
-  getOutputWindowState: () => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_OUTPUT_GET_STATE),
+  getOutputWindowState: () => typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_OUTPUT_GET_STATE),
   onOutputWindowStateChanged: (callback: (isOpen: boolean) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, (_event, isOpen) => {
-      if (typeof isOpen === 'boolean') {
-        callback(isOpen);
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.EDITOR_OUTPUT_STATE_CHANGED, callback);
   },
   onOutputWindowReady: (callback: () => void) => {
-    ipcRenderer.on(IPC_CHANNELS.OUTPUT_READY, () => {
-      callback();
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_READY, callback);
   },
-  getDocumentsPath: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET_DOCUMENTS_PATH),
-  loadSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_LOAD),
-  saveSettings: (settings: Settings) => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_SAVE, settings),
+  getDocumentsPath: () => typedInvoke(ipcRenderer, IPC_CHANNELS.SETTINGS_GET_DOCUMENTS_PATH),
+  loadSettings: () => typedInvoke(ipcRenderer, IPC_CHANNELS.SETTINGS_LOAD),
+  saveSettings: (settings: Settings) =>
+    typedInvoke(ipcRenderer, IPC_CHANNELS.SETTINGS_SAVE, settings),
   ensureDirectories: (patchDirectory: string, mediaDirectory: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_ENSURE_DIRECTORIES, patchDirectory, mediaDirectory),
+    typedInvoke(
+      ipcRenderer,
+      IPC_CHANNELS.SETTINGS_ENSURE_DIRECTORIES,
+      patchDirectory,
+      mediaDirectory,
+    ),
   updateDirectories: (patchDirectory: string, mediaDirectory: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_UPDATE_DIRECTORIES, patchDirectory, mediaDirectory),
+    typedInvoke(
+      ipcRenderer,
+      IPC_CHANNELS.SETTINGS_UPDATE_DIRECTORIES,
+      patchDirectory,
+      mediaDirectory,
+    ),
   selectDirectory: (title: string, defaultPath?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.EDITOR_DIRECTORY_SELECT, title, defaultPath),
-  listPatches: () => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCHES_LIST),
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_DIRECTORY_SELECT, title, defaultPath),
+  listPatches: () => typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_PATCHES_LIST),
   onPatchesChanged: (callback: (patches: Array<PatchFile>) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.EDITOR_PATCHES_CHANGED, (_event, patches) => {
-      if (Array.isArray(patches)) {
-        callback(patches as Array<PatchFile>);
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.EDITOR_PATCHES_CHANGED, callback);
   },
-  readPatch: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_READ, filePath),
+  readPatch: (filePath: string) =>
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_PATCH_READ, filePath),
   savePatch: (filePath: string, content: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_SAVE, filePath, content),
-  patchExists: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_EXISTS, filePath),
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_PATCH_SAVE, filePath, content),
+  patchExists: (filePath: string) =>
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_PATCH_EXISTS, filePath),
   renamePatch: (oldPath: string, newName: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_RENAME, oldPath, newName),
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_PATCH_RENAME, oldPath, newName),
   deletePatch: (filePath: string, isDirectory: boolean) =>
-    ipcRenderer.invoke(IPC_CHANNELS.EDITOR_PATCH_DELETE, filePath, isDirectory),
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_PATCH_DELETE, filePath, isDirectory),
   createFolder: (parentPath: string, folderName: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.EDITOR_FOLDER_CREATE, parentPath, folderName),
+    typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_FOLDER_CREATE, parentPath, folderName),
   sendPreviewFrames: (bitmapA: PreviewFrame | null, bitmapB: PreviewFrame | null) => {
     if (!previewPort) {
       return;
@@ -152,14 +143,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   isPreviewPortReady: () => previewPort !== null,
   sendExecutionResults: (results: ResultsPayload) => {
-    ipcRenderer.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
+    typedSend(ipcRenderer, IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
   },
   onExecutionResults: (callback: (results: ResultsPayload) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results) => {
-      if (isResultsPayload(results)) {
-        callback(results);
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, callback);
   },
   setHydraSource: (
     sourceSlot: HydraSourceSlot,
@@ -167,7 +154,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     mediaType: MediaType,
     playbackSpeed: number,
   ) => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE, {
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE, {
       sourceSlot,
       mediaUrl,
       mediaType,
@@ -182,61 +169,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       playbackSpeed: number;
     }) => void,
   ) => {
-    ipcRenderer.on(IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, (_event, data) => {
-      if (
-        typeof data === 'object' &&
-        data !== null &&
-        'sourceSlot' in data &&
-        'mediaUrl' in data &&
-        'mediaType' in data &&
-        'playbackSpeed' in data
-      ) {
-        callback(
-          data as {
-            sourceSlot: HydraSourceSlot;
-            mediaUrl: string;
-            mediaType: MediaType;
-            playbackSpeed: number;
-          },
-        );
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, callback);
   },
   setHydraSourcePlaybackSpeed: (sourceSlot: HydraSourceSlot, speed: number) => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED, { sourceSlot, speed });
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED, { sourceSlot, speed });
   },
   onSetHydraSourcePlaybackSpeed: (
     callback: (data: { sourceSlot: HydraSourceSlot; speed: number }) => void,
   ) => {
-    ipcRenderer.on(IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED, (_event, data) => {
-      if (typeof data === 'object' && data !== null && 'sourceSlot' in data && 'speed' in data) {
-        callback(data as { sourceSlot: HydraSourceSlot; speed: number });
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED, callback);
   },
   setAudioAnalyzerParams: (params: AudioAnalyzerParams) => {
-    ipcRenderer.send(IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS, params);
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS, params);
   },
   onSetAudioAnalyzerParams: (callback: (params: AudioAnalyzerParams) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS, (_event, params) => {
-      if (
-        typeof params === 'object' &&
-        params !== null &&
-        'smooth' in params &&
-        'scale' in params &&
-        'cutoff' in params
-      ) {
-        callback(params as AudioAnalyzerParams);
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS, callback);
   },
-  listMedia: () => ipcRenderer.invoke(IPC_CHANNELS.EDITOR_MEDIA_LIST),
+  listMedia: () => typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_MEDIA_LIST),
   onMediaChanged: (callback: (media: Array<MediaFile>) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.EDITOR_MEDIA_CHANGED, (_event, media) => {
-      if (Array.isArray(media)) {
-        callback(media as Array<MediaFile>);
-      }
-    });
+    typedOn(ipcRenderer, IPC_CHANNELS.EDITOR_MEDIA_CHANGED, callback);
   },
 });
 

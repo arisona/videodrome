@@ -10,7 +10,6 @@
 
 export const IPC_CHANNELS = {
   // Editor window → Main process (requests/commands)
-  // Settings API
   SETTINGS_GET_DOCUMENTS_PATH: 'settings:get-documents-path',
   SETTINGS_LOAD: 'settings:load',
   SETTINGS_SAVE: 'settings:save',
