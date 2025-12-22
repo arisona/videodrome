@@ -100,7 +100,7 @@ function setPlaybackSpeed(sourceSlot: HydraSourceSlot, speed: number): void {
     const mediaType = globalSources[sourceSlot].media.mediaType;
     setSourcePlaybackSpeed(sourceSlot, mediaType, speed);
     setSourcePlaybackSpeedInComposer(sourceSlot, mediaType, speed);
-    window.electronAPI.setHydraSourcePlaybackSpeed(sourceSlot, speed);
+    window.electronAPI.setHydraSourceSpeed(sourceSlot, speed);
   }
 }
 

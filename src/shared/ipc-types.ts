@@ -95,8 +95,6 @@ export interface CompositeFunction {
 }
 
 export interface ElectronAPI {
-  runCode: (code: string) => void;
-  onRunCode: (callback: (code: string) => void) => void;
   toggleOutputWindow: () => void;
   setOutputWindowFullscreen: () => void;
   getOutputWindowState: () => Promise<boolean>;
@@ -128,6 +126,8 @@ export interface ElectronAPI {
   isPreviewPortReady: () => boolean;
   sendExecutionResults: (results: ResultsPayload) => void;
   onExecutionResults: (callback: (results: ResultsPayload) => void) => void;
+  runHydraCode: (code: string) => void;
+  onRunHydraCode: (callback: (code: string) => void) => void;
   setHydraSource: (
     sourceSlot: HydraSourceSlot,
     mediaUrl: string,
@@ -142,13 +142,13 @@ export interface ElectronAPI {
       playbackSpeed: number;
     }) => void,
   ) => void;
-  setHydraSourcePlaybackSpeed: (sourceSlot: HydraSourceSlot, speed: number) => void;
-  onSetHydraSourcePlaybackSpeed: (
+  setHydraSourceSpeed: (sourceSlot: HydraSourceSlot, speed: number) => void;
+  onSetHydraSourceSpeed: (
     callback: (data: { sourceSlot: HydraSourceSlot; speed: number }) => void,
   ) => void;
   // Audio analyzer API
-  setAudioAnalyzerParams: (params: AudioAnalyzerParams) => void;
-  onSetAudioAnalyzerParams: (callback: (params: AudioAnalyzerParams) => void) => void;
+  setHydraGlobals: (params: AudioAnalyzerParams) => void;
+  onSetHydraGlobals: (callback: (params: AudioAnalyzerParams) => void) => void;
   // Media explorer APIs
   listMedia: () => Promise<Array<MediaFile>>;
   onMediaChanged: (callback: (media: Array<MediaFile>) => void) => void;

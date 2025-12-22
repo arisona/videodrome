@@ -297,12 +297,12 @@ app.on('window-all-closed', () => {
 });
 
 // IPC handlers
-ipcMain.on(IPC_CHANNELS.EDITOR_CODE_RUN, (_event, code: string) => {
-  outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_CODE_RUN, code);
-});
-
 ipcMain.on(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, (_event, results: ResultsPayload) => {
   editorWindow?.webContents.send(IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, results);
+});
+
+ipcMain.on(IPC_CHANNELS.EDITOR_HYDRA_CODE_RUN, (_event, code: string) => {
+  outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_CODE_RUN, code);
 });
 
 ipcMain.on(
@@ -316,16 +316,16 @@ ipcMain.on(
 );
 
 ipcMain.on(
-  IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED,
+  IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE_SPEED,
   (_event, data: { sourceSlot: string; speed: number }) => {
-    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED, data);
+    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE_SPEED, data);
   },
 );
 
 ipcMain.on(
-  IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS,
+  IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS,
   (_event, params: { smooth: number; scale: number; cutoff: number }) => {
-    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS, params);
+    outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS, params);
   },
 );
 

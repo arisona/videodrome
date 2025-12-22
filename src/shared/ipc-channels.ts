@@ -52,9 +52,9 @@ export interface IPCChannelMap {
   [IPC_CHANNELS.EDITOR_OUTPUT_GET_STATE]: [undefined, boolean];
 
   // Editor channels (send - fire and forget)
-  [IPC_CHANNELS.EDITOR_CODE_RUN]: [string, undefined];
   [IPC_CHANNELS.EDITOR_OUTPUT_TOGGLE]: [undefined, undefined];
   [IPC_CHANNELS.EDITOR_OUTPUT_SET_FULLSCREEN]: [undefined, undefined];
+  [IPC_CHANNELS.EDITOR_HYDRA_CODE_RUN]: [string, undefined];
   [IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE]: [
     {
       sourceSlot: HydraSourceSlot;
@@ -64,14 +64,14 @@ export interface IPCChannelMap {
     },
     undefined,
   ];
-  [IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED]: [
+  [IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE_SPEED]: [
     { sourceSlot: HydraSourceSlot; speed: number },
     undefined,
   ];
-  [IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS]: [AudioAnalyzerParams, undefined];
+  [IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS]: [AudioAnalyzerParams, undefined];
 
   // Output window channels (send to renderer)
-  [IPC_CHANNELS.OUTPUT_CODE_RUN]: [string, undefined];
+  [IPC_CHANNELS.OUTPUT_HYDRA_CODE_RUN]: [string, undefined];
   [IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE]: [
     {
       sourceSlot: HydraSourceSlot;
@@ -81,11 +81,11 @@ export interface IPCChannelMap {
     },
     undefined,
   ];
-  [IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED]: [
+  [IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE_SPEED]: [
     { sourceSlot: HydraSourceSlot; speed: number },
     undefined,
   ];
-  [IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS]: [AudioAnalyzerParams, undefined];
+  [IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS]: [AudioAnalyzerParams, undefined];
   [IPC_CHANNELS.OUTPUT_READY]: [undefined, undefined];
   [IPC_CHANNELS.OUTPUT_EXECUTION_RESULT]: [ResultsPayload, undefined];
 

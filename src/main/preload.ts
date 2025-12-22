@@ -53,12 +53,6 @@ function handlePreviewChannel(event: IpcRendererEvent) {
 ipcRenderer.on(IPC_CHANNELS.EDITOR_PREVIEW_CHANNEL, handlePreviewChannel);
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  runCode: (code: string) => {
-    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_CODE_RUN, code);
-  },
-  onRunCode: (callback: (code: string) => void) => {
-    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_CODE_RUN, callback);
-  },
   toggleOutputWindow: () => {
     typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_OUTPUT_TOGGLE);
   },
@@ -148,6 +142,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onExecutionResults: (callback: (results: ResultsPayload) => void) => {
     typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_EXECUTION_RESULT, callback);
   },
+  runHydraCode: (code: string) => {
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_CODE_RUN, code);
+  },
+  onRunHydraCode: (callback: (code: string) => void) => {
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_CODE_RUN, callback);
+  },
   setHydraSource: (
     sourceSlot: HydraSourceSlot,
     mediaUrl: string,
@@ -171,19 +171,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ) => {
     typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE, callback);
   },
-  setHydraSourcePlaybackSpeed: (sourceSlot: HydraSourceSlot, speed: number) => {
-    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_SET_PLAYBACK_SPEED, { sourceSlot, speed });
+  setHydraSourceSpeed: (sourceSlot: HydraSourceSlot, speed: number) => {
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_SET_SOURCE_SPEED, { sourceSlot, speed });
   },
-  onSetHydraSourcePlaybackSpeed: (
+  onSetHydraSourceSpeed: (
     callback: (data: { sourceSlot: HydraSourceSlot; speed: number }) => void,
   ) => {
-    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_PLAYBACK_SPEED, callback);
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE_SPEED, callback);
   },
-  setAudioAnalyzerParams: (params: AudioAnalyzerParams) => {
-    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_AUDIO_ANALYZER_PARAMS, params);
+  setHydraGlobals: (params: AudioAnalyzerParams) => {
+    typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS, params);
   },
-  onSetAudioAnalyzerParams: (callback: (params: AudioAnalyzerParams) => void) => {
-    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_AUDIO_ANALYZER_PARAMS, callback);
+  onSetHydraGlobals: (callback: (params: AudioAnalyzerParams) => void) => {
+    typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS, callback);
   },
   listMedia: () => typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_MEDIA_LIST),
   onMediaChanged: (callback: (media: Array<MediaFile>) => void) => {

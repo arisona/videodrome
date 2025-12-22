@@ -141,7 +141,7 @@ function sendToOutputWindow() {
     compositeMode: performerState.compositeMode,
     compositeParams: performerState.compositeParams,
   };
-  window.electronAPI.runCode(JSON.stringify(payload));
+  window.electronAPI.runHydraCode(JSON.stringify(payload));
 }
 
 function drawPreview(

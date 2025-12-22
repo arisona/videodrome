@@ -379,25 +379,23 @@ window.electronAPI.onSetHydraSource(
 );
 
 // Listen for playback speed changes from editor (speed-only, doesn't re-assign source)
-window.electronAPI.onSetHydraSourcePlaybackSpeed(
-  (data: { sourceSlot: HydraSourceSlot; speed: number }) => {
-    try {
-      const { sourceSlot: slot, speed } = data;
-      // We need to know the media type to apply speed correctly
-      // For now, try to apply to both video and gif (one will succeed based on what's actually loaded)
-      // This is safe because applyPlaybackSpeed checks if the source exists
-      setHydraSourcePlaybackSpeed(hydraA, slot, 'video', speed);
-      setHydraSourcePlaybackSpeed(hydraA, slot, 'gif', speed);
-      setHydraSourcePlaybackSpeed(hydraB, slot, 'video', speed);
-      setHydraSourcePlaybackSpeed(hydraB, slot, 'gif', speed);
-    } catch (error) {
-      console.error('Output: Error applying playback speed:', error);
-    }
-  },
-);
+window.electronAPI.onSetHydraSourceSpeed((data: { sourceSlot: HydraSourceSlot; speed: number }) => {
+  try {
+    const { sourceSlot: slot, speed } = data;
+    // We need to know the media type to apply speed correctly
+    // For now, try to apply to both video and gif (one will succeed based on what's actually loaded)
+    // This is safe because applyPlaybackSpeed checks if the source exists
+    setHydraSourcePlaybackSpeed(hydraA, slot, 'video', speed);
+    setHydraSourcePlaybackSpeed(hydraA, slot, 'gif', speed);
+    setHydraSourcePlaybackSpeed(hydraB, slot, 'video', speed);
+    setHydraSourcePlaybackSpeed(hydraB, slot, 'gif', speed);
+  } catch (error) {
+    console.error('Output: Error applying playback speed:', error);
+  }
+});
 
 // Listen for audio analyzer parameter changes from editor
-window.electronAPI.onSetAudioAnalyzerParams((params: AudioAnalyzerParams) => {
+window.electronAPI.onSetHydraGlobals((params: AudioAnalyzerParams) => {
   try {
     hydraC.synth.a.setSmooth(params.smooth);
     hydraC.synth.a.setScale(params.scale);
@@ -418,7 +416,7 @@ if (window.electronAPI.isPreviewPortReady()) {
   startPreviewStreaming();
 }
 
-window.electronAPI.onRunCode((data: string) => {
+window.electronAPI.onRunHydraCode((data: string) => {
   try {
     const parsed: unknown = JSON.parse(data);
 

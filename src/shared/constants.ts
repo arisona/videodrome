@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   SETTINGS_SAVE: 'settings:save',
   SETTINGS_ENSURE_DIRECTORIES: 'settings:ensure-directories',
   SETTINGS_UPDATE_DIRECTORIES: 'settings:update-directories',
+
   EDITOR_DIRECTORY_SELECT: 'editor:directory-select',
   EDITOR_PATCHES_LIST: 'editor:patches-list',
   EDITOR_PATCH_READ: 'editor:patch-read',
@@ -24,22 +25,22 @@ export const IPC_CHANNELS = {
   EDITOR_PATCH_DELETE: 'editor:patch-delete',
   EDITOR_FOLDER_CREATE: 'editor:folder-create',
   EDITOR_MEDIA_LIST: 'editor:media-list',
-  EDITOR_CODE_RUN: 'editor:code-run',
   EDITOR_OUTPUT_TOGGLE: 'editor:output-toggle',
   EDITOR_OUTPUT_SET_FULLSCREEN: 'editor:output-set-fullscreen',
   EDITOR_OUTPUT_GET_STATE: 'editor:output-get-state',
+  EDITOR_HYDRA_CODE_RUN: 'editor:hydra-code-run',
   EDITOR_HYDRA_SET_SOURCE: 'editor:hydra-set-source',
-  EDITOR_HYDRA_SET_PLAYBACK_SPEED: 'editor:hydra-set-playback-speed',
-  EDITOR_AUDIO_ANALYZER_PARAMS: 'editor:audio-analyzer-params',
+  EDITOR_HYDRA_SET_SOURCE_SPEED: 'editor:hydra-set-source-speed',
+  EDITOR_HYDRA_SET_GLOBALS: 'editor:hydra-set-globals',
   EDITOR_PREVIEW_CHANNEL: 'editor:preview-channel',
   EDITOR_CHECK_UNSAVED_CHANGES: 'editor:check-unsaved-changes',
   EDITOR_SAVE_ALL_BEFORE_QUIT: 'editor:save-all-before-quit',
 
   // Main process → Output window (commands)
-  OUTPUT_CODE_RUN: 'output:code-run',
+  OUTPUT_HYDRA_CODE_RUN: 'output:hydra-code-run',
   OUTPUT_HYDRA_SET_SOURCE: 'output:hydra-set-source',
-  OUTPUT_HYDRA_SET_PLAYBACK_SPEED: 'output:hydra-set-playback-speed',
-  OUTPUT_AUDIO_ANALYZER_PARAMS: 'output:audio-analyzer-params',
+  OUTPUT_HYDRA_SET_SOURCE_SPEED: 'output:hydra-set-source-speed',
+  OUTPUT_HYDRA_SET_GLOBALS: 'output:hydra-set-globals',
 
   // Output window → Main process (events)
   OUTPUT_READY: 'output:ready',

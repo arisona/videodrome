@@ -140,7 +140,7 @@ function transformToHydra() {
  */
 function sendParamsToOutput() {
   const hydraValues = transformToHydra();
-  window.electronAPI.setAudioAnalyzerParams(hydraValues);
+  window.electronAPI.setHydraGlobals(hydraValues);
 }
 
 /**
