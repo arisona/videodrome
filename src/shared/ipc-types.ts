@@ -2,10 +2,11 @@
 
 import type { HydraSourceSlot } from 'hydra-synth';
 
-export interface AudioAnalyzerParams {
-  smooth: number;
-  scale: number;
-  cutoff: number;
+export interface HydraGlobals {
+  speed: number;
+  audioSmooth: number;
+  audioScale: number;
+  audioCutoff: number;
 }
 
 export interface Settings {
@@ -100,7 +101,6 @@ export interface ElectronAPI {
   getOutputWindowState: () => Promise<boolean>;
   onOutputWindowStateChanged: (callback: (isOpen: boolean) => void) => void;
   onOutputWindowReady: (callback: () => void) => void;
-  // Settings API
   getDocumentsPath: () => Promise<string>;
   loadSettings: () => Promise<Settings | null>;
   saveSettings: (settings: Settings) => Promise<void>;
@@ -146,10 +146,8 @@ export interface ElectronAPI {
   onSetHydraSourceSpeed: (
     callback: (data: { sourceSlot: HydraSourceSlot; speed: number }) => void,
   ) => void;
-  // Audio analyzer API
-  setHydraGlobals: (params: AudioAnalyzerParams) => void;
-  onSetHydraGlobals: (callback: (params: AudioAnalyzerParams) => void) => void;
-  // Media explorer APIs
+  setHydraGlobals: (params: HydraGlobals) => void;
+  onSetHydraGlobals: (callback: (params: HydraGlobals) => void) => void;
   listMedia: () => Promise<Array<MediaFile>>;
   onMediaChanged: (callback: (media: Array<MediaFile>) => void) => void;
 }

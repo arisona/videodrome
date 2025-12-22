@@ -4,7 +4,7 @@ import 'material-symbols/outlined.css';
 
 import { FILE_EXTENSIONS } from '../shared/constants';
 
-import { initAudioDrawer } from './components/audio-drawer';
+import { initHydraGlobalsDrawer } from './components/hydra-globals-drawer';
 import { initMediaExplorer, loadMedia } from './components/media-explorer';
 import {
   initPatchExplorer,
@@ -630,8 +630,8 @@ void (async () => {
   initSources();
   initSettings(loadPatches, loadMedia);
 
-  // Initialize audio drawer
-  initAudioDrawer();
+  // Initialize Hydra globals drawer
+  initHydraGlobalsDrawer();
 
   // Initialize patch explorer with callbacks
   initPatchExplorer({

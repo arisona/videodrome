@@ -462,14 +462,14 @@
         color: var(--text-secondary);
       }
 
-      /* Audio Settings Drawer */
-      #audio-settings-drawer {
+      /* Hydra Globals Drawer */
+      #hydra-globals-drawer {
         flex-shrink: 0;
         background: var(--bg-secondary);
         border-top: 1px solid var(--border-color);
       }
 
-      #audio-settings-toggle {
+      #hydra-globals-toggle {
         display: flex;
         align-items: center;
         gap: var(--gap-small);
@@ -482,21 +482,21 @@
         user-select: none;
       }
 
-      #audio-settings-toggle:hover {
+      #hydra-globals-toggle:hover {
         color: var(--text-primary);
         background: var(--hover-bg);
       }
 
-      #audio-settings-toggle-icon {
+      #hydra-globals-toggle-icon {
         font-size: 10px;
         transition: transform 0.2s;
       }
 
-      #audio-settings-drawer.collapsed #audio-settings-toggle-icon {
+      #hydra-globals-drawer.collapsed #hydra-globals-toggle-icon {
         transform: rotate(180deg);
       }
 
-      #audio-settings-content {
+      #hydra-globals-content {
         padding: var(--gap-medium) 12px 12px;
         display: flex;
         flex-direction: column;
@@ -508,7 +508,7 @@
           opacity 0.2s;
       }
 
-      #audio-settings-drawer.collapsed #audio-settings-content {
+      #hydra-globals-drawer.collapsed #hydra-globals-content {
         max-height: 0;
         opacity: 0;
         overflow: hidden;
@@ -630,16 +630,17 @@
               </div>
             </div>
 
-            <!-- Audio Settings Drawer -->
-            <div id="audio-settings-drawer">
-              <div id="audio-settings-toggle" title="Toggle audio settings">
-                <span id="audio-settings-toggle-icon">▲</span>
-                <span>Audio Analyzer</span>
+            <!-- Hydra Globals Drawer -->
+            <div id="hydra-globals-drawer">
+              <div id="hydra-globals-toggle" title="Toggle Hydra globals">
+                <span id="hydra-globals-toggle-icon">▲</span>
+                <span>Hydra Globals</span>
               </div>
-              <div id="audio-settings-content">
-                <div id="audio-smooth-control"></div>
-                <div id="audio-scale-control"></div>
-                <div id="audio-cutoff-control"></div>
+              <div id="hydra-globals-content">
+                <div id="hydra-speed-control"></div>
+                <div id="hydra-audio-smooth-control"></div>
+                <div id="hydra-audio-scale-control"></div>
+                <div id="hydra-audio-cutoff-control"></div>
               </div>
             </div>
           </div>

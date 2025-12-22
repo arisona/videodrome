@@ -6,10 +6,10 @@ import * as monaco from 'monaco-editor';
 import { STATUS_MESSAGES } from '../shared/constants';
 
 import {
-  applyToHydraInstance,
-  addAudioDrawerListener,
-  removeAudioDrawerListener,
-} from './components/audio-drawer';
+  applyHydraGlobals,
+  addHydraGlobalsListener,
+  removeHydraGlobalsListener,
+} from './components/hydra-globals-drawer';
 import { PatchPanel } from './components/patch-panel';
 import { applyGlobalSourcesToHydra } from './editor-state';
 import {
@@ -34,9 +34,14 @@ interface ComposerState {
 
 let composerState: ComposerState | null = null;
 
-// Listener for audio settings changes
-let audioSettingsListener:
-  | ((params: { smooth: number; scale: number; cutoff: number }) => void)
+// Listener for Hydra globals changes
+let hydraGlobalsListener:
+  | ((params: {
+      speed: number;
+      audioSmooth: number;
+      audioScale: number;
+      audioCutoff: number;
+    }) => void)
   | null = null;
 
 // Initialize Hydra instance
@@ -58,18 +63,21 @@ function initHydra() {
   // Apply global sources to this Hydra instance
   applyGlobalSourcesToHydra(composerState.hydra);
 
-  // Apply current audio settings to this Hydra instance
-  applyToHydraInstance(composerState.hydra);
+  // Apply current Hydra globals to this Hydra instance
+  applyHydraGlobals(composerState.hydra);
 
-  // Register listener for future audio drawer changes
-  audioSettingsListener = (params) => {
+  // Register listener for future Hydra globals changes
+  hydraGlobalsListener = (params) => {
     if (composerState?.hydra) {
-      composerState.hydra.synth.a.setSmooth(params.smooth);
-      composerState.hydra.synth.a.setScale(params.scale);
-      composerState.hydra.synth.a.setCutoff(params.cutoff);
+      // Set speed global variable (shared by all Hydra instances)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (window as any).speed = params.speed;
+      composerState.hydra.synth.a.setSmooth(params.audioSmooth);
+      composerState.hydra.synth.a.setScale(params.audioScale);
+      composerState.hydra.synth.a.setCutoff(params.audioCutoff);
     }
   };
-  addAudioDrawerListener(audioSettingsListener);
+  addHydraGlobalsListener(hydraGlobalsListener);
 }
 
 function resizeCanvas() {
@@ -128,10 +136,10 @@ function cleanupHydra() {
   disposeHydraInstance(composerState.hydra, previewCanvas);
   composerState.hydra = null;
 
-  // Unregister audio drawer listener
-  if (audioSettingsListener) {
-    removeAudioDrawerListener(audioSettingsListener);
-    audioSettingsListener = null;
+  // Unregister Hydra globals listener
+  if (hydraGlobalsListener) {
+    removeHydraGlobalsListener(hydraGlobalsListener);
+    hydraGlobalsListener = null;
   }
 }
 

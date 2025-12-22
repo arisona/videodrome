@@ -11,7 +11,7 @@ import {
 } from './hydra/hydra-execution';
 
 import type {
-  AudioAnalyzerParams,
+  HydraGlobals,
   ExecutionPayload,
   ResultsPayload,
   MediaType,
@@ -394,14 +394,19 @@ window.electronAPI.onSetHydraSourceSpeed((data: { sourceSlot: HydraSourceSlot; s
   }
 });
 
-// Listen for audio analyzer parameter changes from editor
-window.electronAPI.onSetHydraGlobals((params: AudioAnalyzerParams) => {
+// Listen for Hydra globals changes from editor
+window.electronAPI.onSetHydraGlobals((params: HydraGlobals) => {
   try {
-    hydraC.synth.a.setSmooth(params.smooth);
-    hydraC.synth.a.setScale(params.scale);
-    hydraC.synth.a.setCutoff(params.cutoff);
+    // Set speed global variable (shared by all Hydra instances due to makeGlobal: true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+    (window as any).speed = params.speed;
+
+    // Set audio analyzer params
+    hydraC.synth.a.setSmooth(params.audioSmooth);
+    hydraC.synth.a.setScale(params.audioScale);
+    hydraC.synth.a.setCutoff(params.audioCutoff);
   } catch (error) {
-    console.error('Output: Error setting audio analyzer params:', error);
+    console.error('Output: Error setting Hydra globals:', error);
   }
 });
 

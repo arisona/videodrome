@@ -4,7 +4,7 @@ import { IPC_CHANNELS } from '../shared/constants';
 import { typedInvoke, typedOn, typedSend } from '../shared/ipc-channels';
 
 import type {
-  AudioAnalyzerParams,
+  HydraGlobals,
   MediaFile,
   MediaType,
   PatchFile,
@@ -179,10 +179,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ) => {
     typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_SOURCE_SPEED, callback);
   },
-  setHydraGlobals: (params: AudioAnalyzerParams) => {
+  setHydraGlobals: (params: HydraGlobals) => {
     typedSend(ipcRenderer, IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS, params);
   },
-  onSetHydraGlobals: (callback: (params: AudioAnalyzerParams) => void) => {
+  onSetHydraGlobals: (callback: (params: HydraGlobals) => void) => {
     typedOn(ipcRenderer, IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS, callback);
   },
   listMedia: () => typedInvoke(ipcRenderer, IPC_CHANNELS.EDITOR_MEDIA_LIST),

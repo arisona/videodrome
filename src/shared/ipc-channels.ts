@@ -5,7 +5,7 @@
 
 import type { IPC_CHANNELS } from './constants';
 import type {
-  AudioAnalyzerParams,
+  HydraGlobals,
   MediaFile,
   MediaType,
   PatchFile,
@@ -68,7 +68,7 @@ export interface IPCChannelMap {
     { sourceSlot: HydraSourceSlot; speed: number },
     undefined,
   ];
-  [IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS]: [AudioAnalyzerParams, undefined];
+  [IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS]: [HydraGlobals, undefined];
 
   // Output window channels (send to renderer)
   [IPC_CHANNELS.OUTPUT_HYDRA_CODE_RUN]: [string, undefined];
@@ -85,7 +85,7 @@ export interface IPCChannelMap {
     { sourceSlot: HydraSourceSlot; speed: number },
     undefined,
   ];
-  [IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS]: [AudioAnalyzerParams, undefined];
+  [IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS]: [HydraGlobals, undefined];
   [IPC_CHANNELS.OUTPUT_READY]: [undefined, undefined];
   [IPC_CHANNELS.OUTPUT_EXECUTION_RESULT]: [ResultsPayload, undefined];
 

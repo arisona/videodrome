@@ -324,7 +324,10 @@ ipcMain.on(
 
 ipcMain.on(
   IPC_CHANNELS.EDITOR_HYDRA_SET_GLOBALS,
-  (_event, params: { smooth: number; scale: number; cutoff: number }) => {
+  (
+    _event,
+    params: { speed: number; audioSmooth: number; audioScale: number; audioCutoff: number },
+  ) => {
     outputWindow?.webContents.send(IPC_CHANNELS.OUTPUT_HYDRA_SET_GLOBALS, params);
   },
 );
