@@ -259,7 +259,7 @@ interface Source {
    * @param amount Blend amount (default: 0.5)
    * @example osc().add(noise()).out()
    */
-  add(source: Source, amount?: _number): Source;
+  add(source: Source | Output | Texture, amount?: _number): Source;
 
   /**
    * Subtracts another source
@@ -267,7 +267,7 @@ interface Source {
    * @param amount Blend amount (default: 0.5)
    * @example osc().sub(noise()).out()
    */
-  sub(source: Source, amount?: _number): Source;
+  sub(source: Source | Output | Texture, amount?: _number): Source;
 
   /**
    * Multiplies with another source
@@ -275,7 +275,7 @@ interface Source {
    * @param amount Blend amount (default: 0.5)
    * @example osc().mult(noise()).out()
    */
-  mult(source: Source, amount?: _number): Source;
+  mult(source: Source | Output | Texture, amount?: _number): Source;
 
   /**
    * Blends with another source
@@ -283,28 +283,28 @@ interface Source {
    * @param amount Blend amount 0-1 (default: 0.5)
    * @example osc().blend(noise(), 0.5).out()
    */
-  blend(source: Source, amount?: _number): Source;
+  blend(source: Source | Output | Texture, amount?: _number): Source;
 
   /**
    * Calculates difference with another source
    * @param texture Source to diff
    * @example osc().diff(noise()).out()
    */
-  diff(texture: Source): Source;
+  diff(texture: Source | Output | Texture): Source;
 
   /**
    * Layers another source on top
    * @param texture Source to layer
    * @example osc().layer(noise()).out()
    */
-  layer(texture: Source): Source;
+  layer(texture: Source | Output | Texture): Source;
 
   /**
    * Uses another source as a mask
    * @param texture Source to use as mask
    * @example osc().mask(noise()).out()
    */
-  mask(texture: Source): Source;
+  mask(texture: Source | Output | Texture): Source;
 
   // === MODULATE OPERATIONS ===
 
@@ -314,7 +314,7 @@ interface Source {
    * @param amount Modulation amount (default: 0.1)
    * @example osc().modulate(noise(), 0.1).out()
    */
-  modulate(source: Source, amount?: _number): Source;
+  modulate(source: Source | Output | Texture, amount?: _number): Source;
 
   /**
    * Modulates rotation using another source
@@ -323,7 +323,7 @@ interface Source {
    * @param offset Rotation offset (default: 0)
    * @example osc().modulateRotate(noise(), 0.1).out()
    */
-  modulateRotate(source: Source, amount?: _number, offset?: _number): Source;
+  modulateRotate(source: Source | Output | Texture, amount?: _number, offset?: _number): Source;
 
   /**
    * Modulates scale using another source
@@ -332,7 +332,7 @@ interface Source {
    * @param offset Scale offset (default: 0.5)
    * @example osc().modulateScale(noise(), 0.1).out()
    */
-  modulateScale(source: Source, amount?: _number, offset?: _number): Source;
+  modulateScale(source: Source | Output | Texture, amount?: _number, offset?: _number): Source;
 
   /**
    * Modulates pixel coordinates using another source
@@ -341,7 +341,7 @@ interface Source {
    * @param offset Pixel offset (default: 0.5)
    * @example osc().modulatePixelate(noise(), 10).out()
    */
-  modulatePixelate(source: Source, amount?: _number, offset?: _number): Source;
+  modulatePixelate(source: Source | Output | Texture, amount?: _number, offset?: _number): Source;
 
   /**
    * Modulates kaleidoscope effect using another source
@@ -349,7 +349,7 @@ interface Source {
    * @param nSides Number of sides (default: 4)
    * @example osc().modulateKaleid(noise(), 4).out()
    */
-  modulateKaleid(source: Source, nSides?: _number): Source;
+  modulateKaleid(source: Source | Output | Texture, nSides?: _number): Source;
 
   /**
    * Modulates hue using another source
@@ -357,7 +357,7 @@ interface Source {
    * @param amount Hue modulation amount (default: 0.4)
    * @example osc().modulateHue(noise(), 0.4).out()
    */
-  modulateHue(source: Source, amount?: _number): Source;
+  modulateHue(source: Source | Output | Texture, amount?: _number): Source;
 
   /**
    * Modulates scroll using another source
@@ -369,7 +369,7 @@ interface Source {
    * @example osc().modulateScrollX(noise(), 0.5).out()
    */
   modulateScrollX(
-    source: Source,
+    source: Source | Output | Texture,
     scrollX?: _number,
     scrollY?: _number,
     speedX?: _number,
@@ -383,7 +383,7 @@ interface Source {
    * @param speedY Vertical speed (default: 0)
    * @example osc().modulateScrollY(noise(), 0.5).out()
    */
-  modulateScrollY(source: Source, scrollY?: _number, speedY?: _number): Source;
+  modulateScrollY(source: Source | Output | Texture, scrollY?: _number, speedY?: _number): Source;
 
   /**
    * Modulates repetition using another source
@@ -395,7 +395,7 @@ interface Source {
    * @example osc().modulateRepeat(noise(), 3, 3).out()
    */
   modulateRepeat(
-    source: Source,
+    source: Source | Output | Texture,
     repeatX?: _number,
     repeatY?: _number,
     offsetX?: _number,
@@ -409,7 +409,7 @@ interface Source {
    * @param offset X-axis offset (default: 0.5)
    * @example osc().modulateRepeatX(noise(), 3, 0.5).out()
    */
-  modulateRepeatX(texture: Source, reps?: _number, offset?: _number): Source;
+  modulateRepeatX(texture: Source | Output | Texture, reps?: _number, offset?: _number): Source;
 
   /**
    * Modulates Y-axis repetition using another source
@@ -418,7 +418,7 @@ interface Source {
    * @param offset Y-axis offset (default: 0.5)
    * @example osc().modulateRepeatY(noise(), 3, 0.5).out()
    */
-  modulateRepeatY(texture: Source, reps?: _number, offset?: _number): Source;
+  modulateRepeatY(texture: Source | Output | Texture, reps?: _number, offset?: _number): Source;
 
   // === OUTPUT ===
 
@@ -574,14 +574,14 @@ declare function gradient(speed?: _number): Source;
 /**
  * External texture sampler
  *
- * Samples from an external source (s0-s3) or output buffer (o0-o3).
- * @param source Texture to sample (default: o0)
+ * Samples from an output buffer (o0-o3) or an external source (s0-s3).
+ * @param source Source or output to sample (default: o0)
  * @example
  * src(o0).out()
  * @example
  * src(s0).out()
  */
-declare function src(texture?: Texture): Source;
+declare function src(source?: Output | Texture): Source;
 
 /**
  * Solid color source
@@ -663,7 +663,7 @@ declare const s3: Texture;
  * @example
  * src(o0).blend(osc(), 0.5).out()
  */
-declare const o0: Output & Source & Texture;
+declare const o0: Output;
 
 /**
  * Output buffer 1
@@ -674,7 +674,7 @@ declare const o0: Output & Source & Texture;
  * @example
  * src(o1).kaleid(4).out()
  */
-declare const o1: Output & Source & Texture;
+declare const o1: Output;
 
 /**
  * Output buffer 2
@@ -685,7 +685,7 @@ declare const o1: Output & Source & Texture;
  * @example
  * src(o2).add(osc()).out()
  */
-declare const o2: Output & Source & Texture;
+declare const o2: Output;
 
 /**
  * Output buffer 3
@@ -696,7 +696,7 @@ declare const o2: Output & Source & Texture;
  * @example
  * src(o3).modulateRotate(noise()).out()
  */
-declare const o3: Output & Source & Texture;
+declare const o3: Output;
 
 /**
  * Elapsed time in seconds since start
