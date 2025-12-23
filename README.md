@@ -9,10 +9,10 @@ A live visuals environment for video synthesis using [Hydra](https://hydra.ojack
 Videodrome provides the following three main tabs:
 
 - **Composer tab (Cmd+1 / Ctrl+1)**: Single editor with live preview.
-- **Performer tab (Cmd+2 / Cmd+3 / Ctrl+2 / Ctrl+3)**: Two editors (A & B) and compositor, rendering to separate output window.
-- **Sources tab (Cmd+4 / Ctrl+4)**: Preview Hydra sources `s0`–`s3`.
+- **Performer tab (Cmd+2 / Cmd+3 / Ctrl+2 / Ctrl+3)**: Two editors and compositor, rendering to separate output window.
+- **Sources tab (Cmd+4 / Ctrl+4)**: Preview Hydra sources `s0`–`s3` and adjust playback speed
 
-## Patch & media explorers
+## Patch and media explorers
 
 The sidebar provides the following two explorers:
 
@@ -59,3 +59,5 @@ Electron • TypeScript • Monaco • Hydra-synth • Vite
 ## License
 
 MIT – see `LICENSE`.
+
+Written by Stefan Arisona ([robotized.arisona.ch](https://robotized.arisona.ch) [github.com/arisona](https://github.com/arisona))
