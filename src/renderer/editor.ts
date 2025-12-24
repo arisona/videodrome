@@ -19,8 +19,16 @@ import {
   hideComposer,
   getComposerState,
   setSource as setSourceInComposer,
+  applyGlobals as applyGlobalsInComposer,
+  setSourcePlaybackSpeed as setSourcePlaybackSpeedInComposer,
 } from './composer-tab';
-import { getGlobalSources } from './editor-state';
+import {
+  getSources,
+  getGlobals,
+  updateSource,
+  updateGlobals,
+  updateSourcePlaybackSpeed,
+} from './hydra/hydra-state';
 import {
   configureMonacoEnvironment,
   defineVideodromeTheme,
@@ -34,6 +42,8 @@ import {
   showSources,
   hideSources,
   setSource as setSourceInSources,
+  applyGlobals as applyGlobalsInSources,
+  setSourcePlaybackSpeed as setSourcePlaybackSpeedInSources,
 } from './sources-tab';
 import { filePathToUrl } from './utils/file-url';
 import { getFilename } from './utils/path';
@@ -623,15 +633,50 @@ window.quitHandlers.setSaveAllBeforeQuit(saveAllBeforeQuit);
 void (async () => {
   // Initialize settings service first (loads settings from disk)
   await initSettingsService();
-
-  // Initialize all tab components
-  initComposer();
-  initPerformer();
-  initSources();
   initSettings(loadPatches, loadMedia);
 
-  // Initialize Hydra globals drawer
-  initHydraGlobalsDrawer();
+  // Initialize primary ui components
+  initComposer();
+  initPerformer();
+  initSources({
+    onSourceSpeedChange: (slot, speed) => {
+      updateSourcePlaybackSpeed(slot, speed);
+      const sources = getSources();
+      if (sources[slot].media) {
+        const mediaType = sources[slot].media.mediaType;
+        setSourcePlaybackSpeedInComposer(slot, mediaType, speed);
+        setSourcePlaybackSpeedInSources(slot, mediaType, speed);
+        window.electronAPI.setHydraSourceSpeed(slot, speed);
+      }
+    },
+  });
+
+  initHydraGlobalsDrawer({
+    onSpeedChange: (value: number) => {
+      updateGlobals({ speed: value });
+      applyGlobalsInComposer();
+      applyGlobalsInSources();
+      window.electronAPI.setHydraGlobals(getGlobals());
+    },
+    onAudioSmoothChange: (value: number) => {
+      updateGlobals({ audioSmooth: value });
+      applyGlobalsInComposer();
+      applyGlobalsInSources();
+      window.electronAPI.setHydraGlobals(getGlobals());
+    },
+    onAudioScaleChange: (value: number) => {
+      updateGlobals({ audioScale: value });
+      applyGlobalsInComposer();
+      applyGlobalsInSources();
+      window.electronAPI.setHydraGlobals(getGlobals());
+    },
+    onAudioCutoffChange: (value: number) => {
+      updateGlobals({ audioCutoff: value });
+      applyGlobalsInComposer();
+      applyGlobalsInSources();
+      window.electronAPI.setHydraGlobals(getGlobals());
+    },
+  });
 
   // Initialize patch explorer with callbacks
   initPatchExplorer({
@@ -646,15 +691,23 @@ void (async () => {
   // Initialize media explorer with callbacks
   initMediaExplorer({
     onMediaSelect: (mediaPath, _mediaName, sourceSlot, mediaType) => {
-      // Store in global sources, but don't change playback speed
-      const globalSources = getGlobalSources();
-      const currentPlaybackSpeed = globalSources[sourceSlot].playbackSpeed;
+      // Store in centralized Hydra state, but don't change playback speed
+      const sources = getSources();
+      const currentPlaybackSpeed = sources[sourceSlot].playbackSpeed;
       const mediaUrl = filePathToUrl(mediaPath);
-      globalSources[sourceSlot].media = {
-        mediaPath: mediaPath,
-        mediaUrl: mediaUrl,
-        mediaType: mediaType,
-      };
+
+      // Update centralized state
+      updateSource(
+        sourceSlot,
+        {
+          mediaPath: mediaPath,
+          mediaUrl: mediaUrl,
+          mediaType: mediaType,
+        },
+        currentPlaybackSpeed,
+      );
+
+      // Apply to all Hydra instances
       setSourceInSources(sourceSlot, mediaUrl, mediaType, currentPlaybackSpeed);
       setSourceInComposer(sourceSlot, mediaUrl, mediaType, currentPlaybackSpeed);
       window.electronAPI.setHydraSource(sourceSlot, mediaUrl, mediaType, currentPlaybackSpeed);

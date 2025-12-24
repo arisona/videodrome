@@ -5,19 +5,14 @@ import * as monaco from 'monaco-editor';
 
 import { STATUS_MESSAGES } from '../shared/constants';
 
-import {
-  applyHydraGlobals,
-  addHydraGlobalsListener,
-  removeHydraGlobalsListener,
-} from './components/hydra-globals-drawer';
 import { PatchPanel } from './components/patch-panel';
-import { applyGlobalSourcesToHydra } from './editor-state';
 import {
   executeInHydraContext,
   disposeHydraInstance,
   setHydraSource,
   setHydraSourcePlaybackSpeed,
 } from './hydra/hydra-execution';
+import { applyGlobalsToHydra, applySourcesToHydra } from './hydra/hydra-state';
 import { requireElementById } from './utils/dom';
 
 import type { MediaType } from '../shared/ipc-types';
@@ -33,16 +28,6 @@ interface ComposerState {
 }
 
 let composerState: ComposerState | null = null;
-
-// Listener for Hydra globals changes
-let hydraGlobalsListener:
-  | ((params: {
-      speed: number;
-      audioSmooth: number;
-      audioScale: number;
-      audioCutoff: number;
-    }) => void)
-  | null = null;
 
 // Initialize Hydra instance
 function initHydra() {
@@ -60,24 +45,9 @@ function initHydra() {
 
   resizeCanvas();
 
-  // Apply global sources to this Hydra instance
-  applyGlobalSourcesToHydra(composerState.hydra);
-
-  // Apply current Hydra globals to this Hydra instance
-  applyHydraGlobals(composerState.hydra);
-
-  // Register listener for future Hydra globals changes
-  hydraGlobalsListener = (params) => {
-    if (composerState?.hydra) {
-      // Set speed global variable (shared by all Hydra instances)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (window as any).speed = params.speed;
-      composerState.hydra.synth.a.setSmooth(params.audioSmooth);
-      composerState.hydra.synth.a.setScale(params.audioScale);
-      composerState.hydra.synth.a.setCutoff(params.audioCutoff);
-    }
-  };
-  addHydraGlobalsListener(hydraGlobalsListener);
+  // Apply all Hydra state (globals and sources) to this Hydra instance
+  applyGlobalsToHydra(composerState.hydra);
+  applySourcesToHydra(composerState.hydra);
 }
 
 function resizeCanvas() {
@@ -128,6 +98,12 @@ export function setSourcePlaybackSpeed(
   }
 }
 
+// Export function to apply globals to composer's Hydra instance
+export function applyGlobals() {
+  if (!composerState?.hydra) return;
+  applyGlobalsToHydra(composerState.hydra);
+}
+
 function cleanupHydra() {
   if (!composerState?.hydra) return;
   const previewCanvas = document.getElementById(
@@ -135,12 +111,6 @@ function cleanupHydra() {
   ) as HTMLCanvasElement;
   disposeHydraInstance(composerState.hydra, previewCanvas);
   composerState.hydra = null;
-
-  // Unregister Hydra globals listener
-  if (hydraGlobalsListener) {
-    removeHydraGlobalsListener(hydraGlobalsListener);
-    hydraGlobalsListener = null;
-  }
 }
 
 function executeHydraCode(code: string) {
@@ -155,6 +125,10 @@ function executeHydraCode(code: string) {
 
   const monacoEditor = composerState.panel.getEditor();
   const statusElement = requireElementById('composer-status') as HTMLSpanElement;
+
+  // Apply globals before executing patch (sources are already applied at init)
+  // This ensures user-defined globals are set as defaults, but patches can override
+  applyGlobalsToHydra(hydraInstance);
 
   try {
     executeInHydraContext(hydraInstance, code, true);

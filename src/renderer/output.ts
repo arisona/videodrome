@@ -9,13 +9,19 @@ import {
   setHydraSource,
   setHydraSourcePlaybackSpeed,
 } from './hydra/hydra-execution';
+import {
+  updateSource,
+  updateSourcePlaybackSpeed,
+  updateGlobals,
+  applyGlobalsToHydra,
+} from './hydra/hydra-state';
 
 import type {
-  HydraGlobals,
   ExecutionPayload,
   ResultsPayload,
   MediaType,
   PreviewFrame,
+  HydraGlobals,
 } from '../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
 
@@ -285,6 +291,11 @@ function executeHydraCode(
     resultB: { success: true },
   };
 
+  // Apply global state before executing patches
+  // This ensures UI state is set as defaults, but patches can override
+  applyGlobalsToHydra(hydraA);
+  applyGlobalsToHydra(hydraB);
+
   try {
     executeInHydraContext(hydraA, patchA, true);
   } catch (error) {
@@ -367,9 +378,21 @@ window.electronAPI.onSetHydraSource(
   }) => {
     try {
       const { sourceSlot: slot, mediaUrl: url, mediaType: type, playbackSpeed: speed } = data;
+
+      // Update centralized state
+      updateSource(
+        slot,
+        {
+          mediaPath: url, // In output window, we only have the URL
+          mediaUrl: url,
+          mediaType: type,
+        },
+        speed,
+      );
+
+      // Apply to hydra instances
       setHydraSource(hydraA, slot, url, type);
       setHydraSource(hydraB, slot, url, type);
-      // Apply initial playback speed to both instances
       setHydraSourcePlaybackSpeed(hydraA, slot, type, speed);
       setHydraSourcePlaybackSpeed(hydraB, slot, type, speed);
     } catch (error) {
@@ -382,6 +405,11 @@ window.electronAPI.onSetHydraSource(
 window.electronAPI.onSetHydraSourceSpeed((data: { sourceSlot: HydraSourceSlot; speed: number }) => {
   try {
     const { sourceSlot: slot, speed } = data;
+
+    // Update centralized state
+    updateSourcePlaybackSpeed(slot, speed);
+
+    // Apply to hydra instances
     // We need to know the media type to apply speed correctly
     // For now, try to apply to both video and gif (one will succeed based on what's actually loaded)
     // This is safe because applyPlaybackSpeed checks if the source exists
@@ -397,11 +425,15 @@ window.electronAPI.onSetHydraSourceSpeed((data: { sourceSlot: HydraSourceSlot; s
 // Listen for Hydra globals changes from editor
 window.electronAPI.onSetHydraGlobals((params: HydraGlobals) => {
   try {
+    // Update centralized state
+    updateGlobals(params);
+
+    // Apply to all Hydra instances
     // Set speed global variable (shared by all Hydra instances due to makeGlobal: true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     (window as any).speed = params.speed;
 
-    // Set audio analyzer params
+    // Set audio analyzer params (shared across hydraA, hydraB, hydraC)
     hydraC.synth.a.setSmooth(params.audioSmooth);
     hydraC.synth.a.setScale(params.audioScale);
     hydraC.synth.a.setCutoff(params.audioCutoff);

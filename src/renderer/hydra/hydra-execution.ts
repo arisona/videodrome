@@ -185,6 +185,23 @@ export function setHydraSource(
 }
 
 /**
+ * Clears a Hydra external source slot (s0-s3)
+ * Releases any media (video/image) and sets the source to black
+ * @param hydra Hydra instance
+ * @param sourceSlot External source slot (s0-s3)
+ */
+export function clearHydraSource(hydra: Hydra, sourceSlot: HydraSourceSlot): void {
+  try {
+    hydra.synth[sourceSlot].clear();
+  } catch (error) {
+    console.error('clearHydraSource: failed to clear source', {
+      slot: sourceSlot,
+      error,
+    });
+  }
+}
+
+/**
  * Sets playback speed for a source (video or GIF)
  * @param hydra Hydra instance
  * @param sourceSlot External source slot (s0-s3)

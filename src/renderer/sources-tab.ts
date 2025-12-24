@@ -3,22 +3,27 @@
 import Hydra from 'hydra-synth';
 
 import { SliderControl } from './components/slider-control';
-import { setSourcePlaybackSpeed as setSourcePlaybackSpeedInComposer } from './composer-tab';
-import { applyGlobalSourcesToHydra, getGlobalSources } from './editor-state';
 import {
   disposeHydraInstance,
   executeInHydraContext,
   setHydraSource,
   setHydraSourcePlaybackSpeed,
 } from './hydra/hydra-execution';
+import { applyGlobalsToHydra, applySourcesToHydra, getSources } from './hydra/hydra-state';
 
 import type { MediaType } from '../shared/ipc-types';
 import type { HydraSourceSlot } from 'hydra-synth';
+
+// Callbacks for source playback speed changes
+interface SourcesCallbacks {
+  onSourceSpeedChange: (slot: HydraSourceSlot, speed: number) => void;
+}
 
 // Sources tab state
 interface SourcesState {
   hydra: Hydra | null;
   isActive: boolean;
+  callbacks: SourcesCallbacks | null;
   sliders: {
     s0: SliderControl | null;
     s1: SliderControl | null;
@@ -45,8 +50,8 @@ function initHydra() {
 
   resizeCanvas();
 
-  // Apply global sources to this Hydra instance
-  applyGlobalSourcesToHydra(sourcesState.hydra);
+  // Apply all Hydra state (sources + globals) to this Hydra instance
+  applySourcesToHydra(sourcesState.hydra);
 }
 
 function resizeCanvas() {
@@ -92,20 +97,14 @@ export function setSource(
   }
 }
 
-// Set playback speed for a specific source (called from slider control callback)
-function setPlaybackSpeed(sourceSlot: HydraSourceSlot, speed: number): void {
-  const globalSources = getGlobalSources();
-  globalSources[sourceSlot].playbackSpeed = speed;
-  if (globalSources[sourceSlot].media) {
-    const mediaType = globalSources[sourceSlot].media.mediaType;
-    setSourcePlaybackSpeed(sourceSlot, mediaType, speed);
-    setSourcePlaybackSpeedInComposer(sourceSlot, mediaType, speed);
-    window.electronAPI.setHydraSourceSpeed(sourceSlot, speed);
-  }
+// Export function to allow applying globals from editor.ts
+export function applyGlobals() {
+  if (!sourcesState?.hydra) return;
+  applyGlobalsToHydra(sourcesState.hydra);
 }
 
-// Set playback speed in the sources tab Hydra instance
-function setSourcePlaybackSpeed(
+// Export function to allow setting playback speed from editor.ts
+export function setSourcePlaybackSpeed(
   sourceSlot: HydraSourceSlot,
   mediaType: MediaType,
   playbackSpeed: number,
@@ -124,13 +123,14 @@ function runPatch() {
   if (!sourcesState?.hydra) return;
 
   const hydra = sourcesState.hydra;
-  const globalSources = getGlobalSources();
+  const sources = getSources();
+
   try {
     const code = `
-      ${globalSources.s0.media ? 'src(s0)' : 'solid(0.1, 0.1, 0.1)'}.out(o0);
-      ${globalSources.s1.media ? 'src(s1)' : 'solid(0.1, 0.1, 0.1)'}.out(o1);
-      ${globalSources.s2.media ? 'src(s2)' : 'solid(0.1, 0.1, 0.1)'}.out(o2);
-      ${globalSources.s3.media ? 'src(s3)' : 'solid(0.1, 0.1, 0.1)'}.out(o3);
+      ${sources.s0.media ? 'src(s0)' : 'solid(0.1, 0.1, 0.1)'}.out(o0);
+      ${sources.s1.media ? 'src(s1)' : 'solid(0.1, 0.1, 0.1)'}.out(o1);
+      ${sources.s2.media ? 'src(s2)' : 'solid(0.1, 0.1, 0.1)'}.out(o2);
+      ${sources.s3.media ? 'src(s3)' : 'solid(0.1, 0.1, 0.1)'}.out(o3);
       render();
     `;
     executeInHydraContext(hydra, code);
@@ -147,10 +147,11 @@ function cleanupHydra() {
 }
 
 // Initialize sources tab
-export function initSources() {
+export function initSources(callbacks: SourcesCallbacks) {
   sourcesState = {
     hydra: null,
     isActive: false,
+    callbacks: callbacks,
     sliders: {
       s0: null,
       s1: null,
@@ -212,7 +213,7 @@ function createSliderControls() {
       decimals: 1,
       attachmentContainer: document.body, // Attach popups to body for proper positioning
       onUpdate: (value: number) => {
-        setPlaybackSpeed(slot, value);
+        sourcesState?.callbacks?.onSourceSpeedChange(slot, value);
       },
     });
 

@@ -60,6 +60,9 @@ declare module 'hydra-synth' {
     // Initialize source with a video URL
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     initVideo: (url: string, params?: any) => void;
+
+    // Clear the source (releases media and sets to black)
+    clear: () => void;
   }
 
   export interface HydraSynth {
