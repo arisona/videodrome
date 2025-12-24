@@ -1,6 +1,6 @@
 {
   "name": "videodrome",
-  "version": "2025.1.2-beta",
+  "version": "2025.1.3-beta",
   "description": "Standalone video synthesizer based on Hydra",
   "main": "dist/main/index.js",
   "scripts": {
