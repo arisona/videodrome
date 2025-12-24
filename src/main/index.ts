@@ -50,7 +50,7 @@ function startWatchers(): void {
   stopWatchers();
 
   if (!patchDirectory || !mediaDirectory) {
-    console.warn('Cannot start watchers: directories not set');
+    console.error('Cannot start watchers: directories not set');
     return;
   }
 
@@ -64,7 +64,7 @@ function startWatchers(): void {
       });
       editorWindow.webContents.send(IPC_CHANNELS.EDITOR_PATCHES_CHANGED, patches);
     } catch (error) {
-      console.warn('Patch rescan failed:', error);
+      console.error('Patch rescan failed:', error);
     }
   }, WATCHER_DEBOUNCE_MS);
 
@@ -74,7 +74,7 @@ function startWatchers(): void {
       const media = collectMediaFiles(mediaDirectory);
       editorWindow.webContents.send(IPC_CHANNELS.EDITOR_MEDIA_CHANGED, media);
     } catch (error) {
-      console.warn('Media rescan failed:', error);
+      console.error('Media rescan failed:', error);
     }
   }, WATCHER_DEBOUNCE_MS);
 
@@ -83,14 +83,14 @@ function startWatchers(): void {
       sendPatches();
     });
   } catch (error) {
-    console.warn('Failed to start patch watcher:', error);
+    console.error('Failed to start patch watcher:', error);
   }
   try {
     mediaWatcher = fs.watch(mediaDirectory, { recursive: true }, () => {
       sendMedia();
     });
   } catch (error) {
-    console.warn('Failed to start media watcher:', error);
+    console.error('Failed to start media watcher:', error);
   }
 }
 

@@ -77,7 +77,7 @@ export function initHydraGlobalsDrawer(callbacks: HydraGlobalsCallbacks) {
     !audioScaleContainer ||
     !audioCutoffContainer
   ) {
-    console.error('Hydra globals drawer: Required DOM elements not found');
+    console.error('Drawer DOM elements not found');
     return;
   }
 

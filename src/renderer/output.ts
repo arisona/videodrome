@@ -223,7 +223,7 @@ function capturePreviewFrame(
       data: buffer,
     };
   } catch (error) {
-    console.error('Output: Failed to capture preview frame', error);
+    console.error('Failed to capture preview frame:', error);
     return null;
   }
 }
@@ -271,7 +271,7 @@ function previewLoop(timestamp: number) {
       window.electronAPI.sendPreviewFrames(frameA, frameB);
     }
   } catch (error) {
-    console.error('Output: Failed to capture preview frames', error);
+    console.error('Failed to capture preview frames:', error);
   } finally {
     previewCaptureInFlight = false;
   }
@@ -297,14 +297,14 @@ function executeHydraCode(
   try {
     executeInHydraContext(hydraA, patchA, true);
   } catch (error) {
-    console.error('Output: Error executing patch A:', error);
+    console.error('Error executing patch A:', error);
     results.resultA = { success: false, error: serializeError(error) };
   }
 
   try {
     executeInHydraContext(hydraB, patchB, true);
   } catch (error) {
-    console.error('Output: Error executing patch B:', error);
+    console.error('Error executing patch B:', error);
     results.resultB = { success: false, error: serializeError(error) };
   }
 
@@ -325,7 +325,7 @@ function executeHydraCode(
       if (!compositeInitialized || currentCompositeMode !== compositeMode) {
         const compositeFunc = getCompositeFunction(compositeMode);
         if (!compositeFunc) {
-          console.error(`Output: Unknown composite function: ${compositeMode}`);
+          console.error(`Unknown composite function: ${compositeMode}`);
           // Fallback to 'add' mode
           const fallbackFunc = getCompositeFunction('add');
           if (fallbackFunc) {
@@ -394,7 +394,7 @@ window.electronAPI.onSetHydraSource(
       setHydraSourcePlaybackSpeed(hydraA, slot, type, speed);
       setHydraSourcePlaybackSpeed(hydraB, slot, type, speed);
     } catch (error) {
-      console.error('Output: Error applying Hydra source:', error);
+      console.error('Error applying Hydra source:', error);
     }
   },
 );
@@ -416,7 +416,7 @@ window.electronAPI.onSetHydraSourceSpeed((data: { sourceSlot: HydraSourceSlot; s
     setHydraSourcePlaybackSpeed(hydraB, slot, 'video', speed);
     setHydraSourcePlaybackSpeed(hydraB, slot, 'gif', speed);
   } catch (error) {
-    console.error('Output: Error applying playback speed:', error);
+    console.error('Error applying playback speed:', error);
   }
 });
 
@@ -436,7 +436,7 @@ window.electronAPI.onSetHydraGlobals((params: HydraGlobals) => {
     hydraC.synth.a.setScale(params.audioScale);
     hydraC.synth.a.setCutoff(params.audioCutoff);
   } catch (error) {
-    console.error('Output: Error setting Hydra globals:', error);
+    console.error('Error setting Hydra globals:', error);
   }
 });
 
@@ -464,9 +464,9 @@ window.electronAPI.onRunHydraCode((data: string) => {
         payload.compositeParams ?? {},
       );
     } else {
-      console.error('Output: Invalid payload format received');
+      console.error('Invalid payload format received');
     }
   } catch (error) {
-    console.error('Output: Error parsing code payload:', error);
+    console.error('Error parsing code payload:', error);
   }
 });

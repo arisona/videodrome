@@ -173,7 +173,7 @@ export function setHydraSource(
       return;
     }
   } catch (error) {
-    console.error('assignHydraSource: failed to assign source', {
+    console.error('Failed to set Hydra source', {
       slot: sourceSlot,
       mediaUrl: mediaUrl,
       mediaType: mediaType,
@@ -192,7 +192,7 @@ export function clearHydraSource(hydra: Hydra, sourceSlot: HydraSourceSlot): voi
   try {
     hydra.synth[sourceSlot].clear();
   } catch (error) {
-    console.error('clearHydraSource: failed to clear source', {
+    console.error('Failed to clear Hydra source', {
       slot: sourceSlot,
       error,
     });
