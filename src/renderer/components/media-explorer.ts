@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { ContentExplorerBase, type ExplorerConfig } from './content-explorer-base';
 import { PreviewGenerator } from './preview-generator';
 

@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import * as monaco from 'monaco-editor';
 
 import { debounce, type DebouncedFunction } from '../../shared/debounce';

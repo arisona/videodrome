@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 /**
  * Convert simple markdown to HTML for documentation display
  *

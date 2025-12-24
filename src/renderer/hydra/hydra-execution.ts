@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 /**
  * Hydra Runtime Execution Utilities
  *

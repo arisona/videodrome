@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { FILE_EXTENSIONS, STATUS_MESSAGES } from '../../shared/constants';
 import { registerContextMenuActions } from '../monaco-setup';
 import { getSettings } from '../settings-service';

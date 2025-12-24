@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import Hydra from 'hydra-synth';
 
 import { SliderControl } from './components/slider-control';

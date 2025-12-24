@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { convertMarkdownToHtml } from '../utils/markdown';
 
 /**

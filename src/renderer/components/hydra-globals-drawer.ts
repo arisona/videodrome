@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { getSettings, updateSettings } from '../settings-service';
 
 import { SliderControl } from './slider-control';

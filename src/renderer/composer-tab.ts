@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import Hydra from 'hydra-synth';
 import * as monaco from 'monaco-editor';
 

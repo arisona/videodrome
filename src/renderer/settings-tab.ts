@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { DEFAULT_SETTINGS } from '../shared/constants';
 import { debounce } from '../shared/debounce';
 

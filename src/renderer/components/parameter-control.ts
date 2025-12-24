@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { getSettings } from '../settings-service';
 import { querySelector } from '../utils/dom';
 

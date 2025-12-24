@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { filePathToUrl } from '../utils/file-url';
 
 import type { MediaFile, MediaType } from '../../shared/ipc-types';

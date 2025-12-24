@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 /**
  * Path utility functions for the renderer process
  */

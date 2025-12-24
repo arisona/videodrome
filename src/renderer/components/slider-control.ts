@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { debounce } from '../../shared/debounce';
 import { getSettings } from '../settings-service';
 

@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import * as path from 'path-browserify';
 
 import { APP_CONFIG, DEFAULT_SETTINGS } from '../shared/constants';

@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import Hydra from 'hydra-synth';
 
 import { getCompositeFunction } from '../shared/composite-functions';

@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { setHydraSource, setHydraSourcePlaybackSpeed, clearHydraSource } from './hydra-execution';
 
 import type { MediaType } from '../../shared/ipc-types';

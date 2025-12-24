@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 import { debounce, type DebouncedFunction } from '../../shared/debounce';
 
 /**
